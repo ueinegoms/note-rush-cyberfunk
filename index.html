@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOTE RUSH</title>
+<title>NOTE RUSH CYBERFUNK</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -26,6 +26,20 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.7r
 .combo-num{font-family:'Fredoka One',cursive;font-size:1.7rem;color:var(--orange);line-height:1;text-align:right;}
 .combo-num.fire{color:#e83010;text-shadow:0 0 12px rgba(255,80,0,.5);animation:fire-pulse .4s ease infinite alternate;}
 @keyframes fire-pulse{0%{transform:scale(1);}100%{transform:scale(1.08);}}
+.combo-num.unhinged{color:#e83010;text-shadow:0 0 20px rgba(255,40,0,.8),0 0 40px rgba(255,80,0,.4);animation:jitter .08s steps(1) infinite;}
+@keyframes jitter{
+  0%  {transform:translate(0,0)     rotate(0deg)   scale(1.0);}
+  10% {transform:translate(-3px,2px) rotate(-2deg) scale(1.05);}
+  20% {transform:translate(4px,-1px) rotate(3deg)  scale(1.08);}
+  30% {transform:translate(-2px,3px) rotate(-1deg) scale(1.04);}
+  40% {transform:translate(5px,1px)  rotate(4deg)  scale(1.1);}
+  50% {transform:translate(-4px,-2px)rotate(-3deg) scale(1.06);}
+  60% {transform:translate(2px,4px)  rotate(2deg)  scale(1.09);}
+  70% {transform:translate(-5px,0px) rotate(-4deg) scale(1.07);}
+  80% {transform:translate(3px,-3px) rotate(1deg)  scale(1.05);}
+  90% {transform:translate(-1px,2px) rotate(-2deg) scale(1.11);}
+  100%{transform:translate(0,0)      rotate(0deg)  scale(1.0);}
+}
 .best-area{text-align:right;}
 .best-lbl{font-family:'Share Tech Mono',monospace;font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
 .best-num{font-family:'Fredoka One',cursive;font-size:1.1rem;color:var(--gold);line-height:1;}
@@ -79,15 +93,20 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.7r
 .playbtn:hover{background:var(--gold);color:#fff;}
 /* piano */
 .pianow{display:flex;justify-content:center;padding:.4rem 0;overflow-x:auto;width:100%;}
-.piano{display:flex;gap:2px;user-select:none;}
-.wkey{width:40px;height:110px;background:#f4f4ee;border:1.5px solid #b0a888;border-radius:0 0 6px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:7px;transition:all .1s;box-shadow:0 4px 7px rgba(0,0,0,.13),inset 0 -3px 0 rgba(0,0,0,.07);}
+.piano{position:relative;display:flex;user-select:none;height:120px;}
+.wkey{width:36px;height:115px;background:#f4f4ee;border:1.5px solid #b0a888;border-radius:0 0 6px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;transition:background .1s,transform .1s;box-shadow:0 4px 7px rgba(0,0,0,.13),inset 0 -3px 0 rgba(0,0,0,.07);position:relative;z-index:1;flex-shrink:0;}
 .wkey:hover:not(.dis){background:#fde0b0;border-color:var(--orange);}
 .wkey.pressed{background:var(--orange);transform:translateY(2px);}
 .wkey.ck{background:rgba(58,138,48,.25);border-color:var(--ok);}
 .wkey.wk{background:rgba(200,40,40,.18);border-color:var(--err);}
+.wkey.inactive{background:#e8e8de;cursor:default;}
 .wkey.dis{cursor:default;pointer-events:none;}
-.wlbl{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--muted);text-align:center;line-height:1.2;pointer-events:none;}
-.wkey.pressed .wlbl{color:#fff;}
+.wlbl{font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--muted);text-align:center;line-height:1.15;pointer-events:none;}
+.wkey.pressed .wlbl,.wkey.ck .wlbl{color:inherit;}
+.bkey{position:absolute;width:22px;height:70px;background:#2a2418;border-radius:0 0 4px 4px;z-index:2;cursor:pointer;transition:background .1s,transform .1s;box-shadow:0 4px 6px rgba(0,0,0,.4),inset 0 -2px 0 rgba(0,0,0,.3);}
+.bkey:hover:not(.dis){background:#4a3a28;box-shadow:0 4px 6px rgba(0,0,0,.4),0 0 8px rgba(240,112,32,.3);}
+.bkey.pressed{background:#8a5020;transform:translateY(2px);}
+.bkey.dis{cursor:default;pointer-events:none;}
 .lnav{display:flex;align-items:center;gap:.75rem;}
 .nbtn{padding:.48rem 1.15rem;border-radius:7px;border:2.5px solid var(--border);background:var(--panel2);color:var(--text);font-family:'Fredoka One',cursive;font-size:.83rem;cursor:pointer;transition:all .15s;}
 .nbtn:hover{border-color:var(--orange);color:var(--orange);}
@@ -170,7 +189,7 @@ footer{margin-left:52px;background:#1a1a10;color:#5a5d40;font-family:'Share Tech
 <div class="page">
   <header>
     <div>
-      <div class="logo-title">NOTE RUSH</div>
+      <div class="logo-title">NOTE RUSH CYBERFUNK</div>
       <div class="logo-sub">clave de sol</div>
     </div>
     <div class="hdr-right">
@@ -186,14 +205,13 @@ footer{margin-left:52px;background:#1a1a10;color:#5a5d40;font-family:'Share Tech
   </header>
   <div id="cfg">
     <div class="cfg-lbl">// CONFIG</div>
-    <div class="sr"><label>Acertos p/ nova nota:</label><input type="range" id="sfn" min="1" max="8" value="3"><span class="sv" id="sfn-v">3</span></div>
     <div class="sr"><label>Acertos p/ avançar fase:</label><input type="range" id="sfp" min="2" max="12" value="5"><span class="sv" id="sfp-v">5</span></div>
     <div class="sr"><label>Opções:</label><input type="range" id="opts" min="2" max="7" value="3"><span class="sv" id="opts-v">3</span></div>
     <div class="sr"><label>Notas:</label><select id="nr"><option value="basic">Básico (Mi4–Sol5)</option><option value="extended" selected>Estendido (Sol3–Mi5)</option><option value="full">Completo (Dó3–Sol5)</option></select></div>
   </div>
   <div id="ct"></div>
 </div>
-<footer>Dó · Ré · Mi · Fá · Sol · Lá · Si &nbsp;|&nbsp; NOTE RUSH</footer>
+<footer>Dó · Ré · Mi · Fá · Sol · Lá · Si &nbsp;|&nbsp; NOTE RUSH CYBERFUNK</footer>
 
 <script>
 // ══════════════════════════════════════════════
@@ -267,7 +285,7 @@ function saveLocalLB(name, score) {
 // ══════════════════════════════════════════════
 //  NOTE DATA
 // ══════════════════════════════════════════════
-const LS=22, BY=115, SW=500, SH=200, NX=270;
+const LS=22, BY=115, SW=500, SH=230, NX=270;
 const AN=[
   {id:'Dó3', s:-14,lb:'Dó₃',lB:'DÓ₃',f:130.81},
   {id:'Ré3', s:-13,lb:'Ré₃',lB:'RÉ₃',f:146.83},
@@ -311,10 +329,10 @@ function getDistractors(exclude, count) {
 // ══════════════════════════════════════════════
 //  SETTINGS
 // ══════════════════════════════════════════════
-[['sfn','sfn-v'],['sfp','sfp-v'],['opts','opts-v']].forEach(([a,b])=>{
+[['sfp','sfp-v'],['opts','opts-v']].forEach(([a,b])=>{
   document.getElementById(a).addEventListener('input',function(){document.getElementById(b).textContent=this.value;});
 });
-const S=()=>({sfn:+document.getElementById('sfn').value,sfp:+document.getElementById('sfp').value,opts:+document.getElementById('opts').value});
+const S=()=>({sfp:+document.getElementById('sfp').value,opts:+document.getElementById('opts').value});
 
 // ══════════════════════════════════════════════
 //  AUDIO
@@ -365,6 +383,21 @@ function NY(sp){return BY-sp*(LS/2);}
 function buildStaff({showNote=null,interactive=false,revealNote=null}={}){
   const PL=65,PR=18;
   let s=`<svg class="ssvg" viewBox="0 0 ${SW} ${SH}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Ghost ledger lines above and below staff (always shown as orientation guides)
+  // Below staff: sp = -2 (D4/C4 area), -4 (A3), -6 (F3), -8 (D3), -10 (B2)
+  // Above staff: sp = 10 (A5), 12 (C6)
+  // Show ghost lines 3 levels above and below
+  const ghostCol='rgba(154,158,120,0.28)';
+  const gx1=PL, gx2=SW-PR;
+  for(let sp=-2;sp>=-10;sp-=2){
+    s+=`<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${ghostCol}" stroke-width="1.2" stroke-dasharray="6 4"/>`;
+  }
+  for(let sp=10;sp<=14;sp+=2){
+    s+=`<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${ghostCol}" stroke-width="1.2" stroke-dasharray="6 4"/>`;
+  }
+
+  // Real staff lines
   for(let i=0;i<5;i++){const y=NY(i*2);s+=`<line x1="${PL}" y1="${y}" x2="${SW-PR}" y2="${y}" stroke="#9a9e78" stroke-width="1.8"/>`;}
   const cfs=LS*5.4,cy2=BY+LS*0.42;
   s+=`<text x="9" y="${cy2}" font-size="${cfs}" fill="#8a7840" font-family="Georgia,serif" opacity=".88">&#x1D11E;</text>`;
@@ -403,25 +436,128 @@ function buildStaff({showNote=null,interactive=false,revealNote=null}={}){
 }
 
 // ══════════════════════════════════════════════
-//  PIANO
+//  PIANO — full chromatic keyboard
 // ══════════════════════════════════════════════
-function buildPiano(notes,onKey,disAll=false){
-  const w=document.createElement('div');w.className='pianow';
-  const p=document.createElement('div');p.className='piano';
-  notes.forEach(nid=>{
-    const n=nd(nid);const k=document.createElement('div');
-    k.className='wkey'+(disAll?' dis':'');k.dataset.note=nid;
-    const lb=n.lb.replace(/(₃|₄|₅)/,' $1').trim();
-    k.innerHTML=`<div class="wlbl">${lb}</div>`;
-    if(!disAll){
-      k.addEventListener('mousedown',()=>{playNote(n.f,.7);k.classList.add('pressed');});
-      k.addEventListener('mouseup',()=>k.classList.remove('pressed'));
-      k.addEventListener('mouseleave',()=>k.classList.remove('pressed'));
-      k.addEventListener('click',()=>onKey(nid,k));
+// All notes in our range mapped to piano position
+// Each entry: id (null=black non-game key), white key index, isBlack, freq
+// We build a full chromatic range from the lowest to highest active note
+// White key pattern per octave: C D E F G A B (indices 0-6)
+// Black keys: C# D# F# G# A# between them
+
+const CHROMATIC = [
+  // octave 3
+  {id:'Dó3', pc:0, oct:3, isB:false, f:130.81},
+  {id:null,  pc:1, oct:3, isB:true,  f:138.59}, // C#3
+  {id:'Ré3', pc:2, oct:3, isB:false, f:146.83},
+  {id:null,  pc:3, oct:3, isB:true,  f:155.56}, // D#3
+  {id:'Mi3', pc:4, oct:3, isB:false, f:164.81},
+  {id:'Fá3', pc:5, oct:3, isB:false, f:174.61},
+  {id:null,  pc:6, oct:3, isB:true,  f:185.00}, // F#3
+  {id:'Sol3',pc:7, oct:3, isB:false, f:196.00},
+  {id:null,  pc:8, oct:3, isB:true,  f:207.65}, // G#3
+  {id:'Lá3', pc:9, oct:3, isB:false, f:220.00},
+  {id:null,  pc:10,oct:3, isB:true,  f:233.08}, // A#3
+  {id:'Si3', pc:11,oct:3, isB:false, f:246.94},
+  // octave 4
+  {id:'Dó4', pc:0, oct:4, isB:false, f:261.63},
+  {id:null,  pc:1, oct:4, isB:true,  f:277.18},
+  {id:'Ré4', pc:2, oct:4, isB:false, f:293.66},
+  {id:null,  pc:3, oct:4, isB:true,  f:311.13},
+  {id:'Mi4', pc:4, oct:4, isB:false, f:329.63},
+  {id:'Fá4', pc:5, oct:4, isB:false, f:349.23},
+  {id:null,  pc:6, oct:4, isB:true,  f:369.99},
+  {id:'Sol4',pc:7, oct:4, isB:false, f:392.00},
+  {id:null,  pc:8, oct:4, isB:true,  f:415.30},
+  {id:'Lá4', pc:9, oct:4, isB:false, f:440.00},
+  {id:null,  pc:10,oct:4, isB:true,  f:466.16},
+  {id:'Si4', pc:11,oct:4, isB:false, f:493.88},
+  // octave 5
+  {id:'Dó5', pc:0, oct:5, isB:false, f:523.25},
+  {id:null,  pc:1, oct:5, isB:true,  f:554.37},
+  {id:'Ré5', pc:2, oct:5, isB:false, f:587.33},
+  {id:null,  pc:3, oct:5, isB:true,  f:622.25},
+  {id:'Mi5', pc:4, oct:5, isB:false, f:659.25},
+  {id:'Fá5', pc:5, oct:5, isB:false, f:698.46},
+  {id:null,  pc:6, oct:5, isB:true,  f:739.99},
+  {id:'Sol5',pc:7, oct:5, isB:false, f:783.99},
+];
+
+function buildPiano(activeNotes, onKey, disAll=false){
+  // Find range: from lowest to highest active note, span full octaves
+  const activeChrom = CHROMATIC.filter(k => k.id && activeNotes.includes(k.id));
+  if(!activeChrom.length) return document.createElement('div');
+
+  // Get all chromatic notes in range (expand to cover full octaves)
+  const minOct = Math.min(...activeChrom.map(k=>k.oct));
+  const maxOct = Math.max(...activeChrom.map(k=>k.oct));
+  const range = CHROMATIC.filter(k => k.oct >= minOct && k.oct <= maxOct);
+
+  // Separate white and black
+  const whites = range.filter(k => !k.isB);
+  const WW = 36; // white key width
+  const GAP = 2;
+  const totalW = whites.length * (WW + GAP);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'pianow';
+  const piano = document.createElement('div');
+  piano.className = 'piano';
+  piano.style.width = totalW + 'px';
+
+  // Draw white keys first
+  whites.forEach((k, wi) => {
+    const isActive = k.id && activeNotes.includes(k.id);
+    const btn = document.createElement('div');
+    btn.className = 'wkey' + (disAll?' dis':'') + (k.id&&!isActive?' inactive':'');
+    btn.style.left = (wi*(WW+GAP))+'px';
+    btn.style.position = 'absolute';
+    btn.style.width = WW+'px';
+    if(k.id) btn.dataset.note = k.id;
+
+    if(isActive && k.id){
+      const n = nd(k.id);
+      // Label: note name, two lines
+      btn.innerHTML = `<div class="wlbl">${n.lb.replace(/(₃|₄|₅)/,'\n$1')}</div>`;
     }
-    p.appendChild(k);
+
+    if(!disAll && isActive && k.id){
+      const n = nd(k.id);
+      btn.addEventListener('mousedown',()=>{playNote(n.f,.7);btn.classList.add('pressed');});
+      btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
+      btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
+      btn.addEventListener('click',()=>onKey(k.id, btn));
+    }
+    piano.appendChild(btn);
   });
-  w.appendChild(p);return w;
+
+  // Draw black keys on top
+  // Black key position: sits between white keys
+  // pc=1(C#): after C(pc=0), pc=3(D#): after D(pc=2), pc=6(F#): after F(pc=5)
+  // pc=8(G#): after G(pc=7), pc=10(A#): after A(pc=9)
+  const blackOffset = {1:0.6, 3:0.6, 6:0.6, 8:0.6, 10:0.6}; // fraction offset from left white
+  range.filter(k=>k.isB).forEach(k => {
+    // Find the white key to the left (pc-1)
+    const leftPc = k.pc - 1;
+    const leftWhiteIdx = whites.findIndex(w => w.oct===k.oct && w.pc===leftPc);
+    if(leftWhiteIdx < 0) return;
+    const leftX = leftWhiteIdx * (WW + GAP);
+    const bx = leftX + WW * 0.6;
+
+    const btn = document.createElement('div');
+    btn.className = 'bkey' + (disAll?' dis':'');
+    btn.style.left = bx+'px';
+    btn.style.top = '0';
+
+    if(!disAll){
+      btn.addEventListener('mousedown',()=>{playNote(k.f,.7);btn.classList.add('pressed');});
+      btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
+      btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
+    }
+    piano.appendChild(btn);
+  });
+
+  wrap.appendChild(piano);
+  return wrap;
 }
 
 // ══════════════════════════════════════════════
@@ -572,17 +708,19 @@ function render(){
   ct.appendChild(tabs);
 
   // streak
-  const{sfn,sfp}=S();const smax=G.phase===1?sfn:sfp;
+  const{sfp}=S();const smax=sfp;
   const sa=document.createElement('div');sa.id='stk';
-  sa.innerHTML=`<span class="slbl">STREAK p/ ${G.phase===1?'nova nota':'avançar'}</span>
+  sa.innerHTML=`<span class="slbl">STREAK p/ avançar</span>
     <div class="sdots">${Array.from({length:Math.min(smax,14)},(_,i)=>`<div class="sdot${i<G.streak?' on':''}"></div>`).join('')}</div>
     <span class="snum">${G.streak}/${smax}</span>`;
   ct.appendChild(sa);
 
-  // note progress
+  // note progress — show which note is active and which are mastered
   const np=document.createElement('div');np.id='nprog';
+  const curNote=gn()[G.unlocked-1];
   gn().forEach((nid,i)=>{
     const n=nd(nid);const sp=document.createElement('span');
+    // unlocked-1 = current note being studied across all phases
     sp.className='np'+(i===G.unlocked-1?' current':i<G.unlocked-1?' unlocked':'');
     sp.textContent=n.lb;np.appendChild(sp);
   });
@@ -598,8 +736,8 @@ function render(){
 function updateComboDisplay(){
   const el=document.getElementById('combo-disp');
   if(!el)return;
-  el.textContent=G.combo;
-  el.className='combo-num'+(G.combo>=10?' fire':'');
+  el.textContent='x'+G.combo;
+  el.className='combo-num'+(G.combo>=20?' unhinged':G.combo>=8?' fire':'');
   const best=document.getElementById('best-disp');
   if(best)best.textContent=G.bestCombo>0?'x'+G.bestCombo:'—';
 }
@@ -608,8 +746,8 @@ function updateComboDisplay(){
 function renderIntro(){
   const lbWrap = document.createElement('div');
   lbWrap.className = 'lb-wrap';
-  ct.innerHTML=`<div id="intro"><div class="bigclef">&#x1D11E;</div><div class="ititle">NOTE RUSH</div>
-  <p class="idesc">Aprenda as notas da clave de sol em 5 fases. COMBO — erre e perde tudo!</p>
+  ct.innerHTML=`<div id="intro"><div class="bigclef">&#x1D11E;</div><div class="ititle">NOTE RUSH CYBERFUNK</div>
+  <p class="idesc">Aprenda as notas da clave de sol em 5 fases. Complete todas as fases com uma nota para desbloquear a próxima. COMBO — erre e perde tudo!</p>
   <div class="pills">
     <div class="pill"><span class="pn">1</span>Ver e memorizar na pauta</div>
     <div class="pill"><span class="pn">2</span>Vê a nota, clica no nome</div>
@@ -626,16 +764,17 @@ function renderIntro(){
 function rLearn(){
   const notes=ga();const note=notes[Math.min(G.li,notes.length-1)];const n=nd(note);
   const card=document.createElement('div');card.className='card pop-in';
-  // Show unlock banner if we just unlocked
+  // Show unlock banner if we just unlocked a new note
   const unlockBanner = G.pendingUnlock
-    ? `<div class="unlock-banner">🔓 Nova nota desbloqueada: ${n.lB}!<span>Veja onde ela fica antes de continuar</span></div>`
+    ? `<div class="unlock-banner">🔓 Nova nota desbloqueada: ${n.lB}!<span>Veja onde ela fica na pauta antes de continuar</span></div>`
     : '';
+  const noteCount = notes.length > 1 ? `<div class="linfo">${G.li+1} / ${notes.length} notas</div>` : '';
   card.innerHTML=`<div class="ptag">Fase 1 — Memorize</div>
     ${unlockBanner}
     <div class="nname">${n.lB}</div>
     <div class="staffw">${buildStaff({showNote:note})}</div>
     <button class="playbtn" onclick="playNote(${n.f})">&#9834; Ouvir nota</button>
-    <div class="linfo">${G.li+1} / ${notes.length} desbloqueadas</div>
+    ${noteCount}
     <div class="lnav">
       ${G.li>0?`<button class="nbtn" onclick="lPrev()">&#8592; Anterior</button>`:'<span></span>'}
       ${G.li<notes.length-1
@@ -766,7 +905,7 @@ function renderGameOver() {
 //  LOGIC
 // ══════════════════════════════════════════════
 function startGame(){
-  G={phase:1,streak:0,noteStreak:0,unlocked:1,combo:0,bestCombo:0,cur:null,ans:false,sopts:[],li:0,pendingUnlock:false,_lastCombo:0};
+  G={phase:1,streak:0,unlocked:2,combo:0,bestCombo:0,cur:null,ans:false,sopts:[],li:0,pendingUnlock:false,_lastCombo:0};
   render();
 }
 
@@ -796,33 +935,35 @@ function nextQ(){G.cur=null;G.ans=false;render();}
 function shuf(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
 
 function onOk(){
-  G.streak++;G.noteStreak++;G.combo++;
+  G.streak++;G.combo++;
   if(G.combo>G.bestCombo)G.bestCombo=G.combo;
   G.ans=true;
   jOk();confetti();
   updateComboDisplay();
 
-  const{sfn,sfp}=S();const allN=gn();
-
-  // Unlock next note
-  if(G.noteStreak>=sfn&&G.unlocked<allN.length){
-    G.unlocked++;G.noteStreak=0;G.streak=0;
-    G.pendingUnlock=true;
-    G.li=G.unlocked-1; // point to new note
-    setTimeout(()=>{G.phase=1;G.cur=null;G.ans=false;render();},900);
-    return;
-  }
+  const{sfp}=S();const allN=gn();
 
   // Update streak dots
   document.querySelectorAll('.sdot').forEach((d,i)=>{if(i<G.streak)d.classList.add('on');});
 
-  // Advance phase
+  // Advance phase or unlock next note
   if(G.streak>=sfp){
     if(G.phase<5){
+      // Advance to next phase, reset streak
       setTimeout(()=>{G.phase++;G.streak=0;G.cur=null;G.ans=false;render();},1000);
       return;
     } else {
-      G.streak=0;
+      // Completed phase 5! Unlock next note if available
+      if(G.unlocked<allN.length){
+        G.unlocked++;G.streak=0;
+        G.pendingUnlock=true;
+        G.li=G.unlocked-1; // point learn view to the new note
+        setTimeout(()=>{G.phase=1;G.cur=null;G.ans=false;render();},1000);
+        return;
+      } else {
+        // All notes mastered — keep playing, loop streak
+        G.streak=0;
+      }
     }
   }
 
@@ -831,7 +972,7 @@ function onOk(){
 
 function onErr(){
   G._lastCombo=G.combo;
-  G.combo=0;G.streak=0;G.noteStreak=0;G.ans=true;
+  G.combo=0;G.streak=0;G.ans=true;
   jErr();
   updateComboDisplay();
   document.querySelectorAll('.sdot').forEach(d=>d.classList.remove('on'));
@@ -861,7 +1002,8 @@ function hPlace(chosen){
 function hPiano(chosen,btn){
   if(G.ans)return;
   const cor=G.cur;
-  document.querySelectorAll('.wkey').forEach(k=>{k.classList.add('dis');k.style.pointerEvents='none';});
+  // disable all interactive keys
+  document.querySelectorAll('.wkey:not(.inactive),.bkey').forEach(k=>{k.classList.add('dis');k.style.pointerEvents='none';});
   document.querySelector('.wkey[data-note="'+cor+'"]')?.classList.add('ck');
   const fb=document.getElementById('fb');
   if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';onOk();}

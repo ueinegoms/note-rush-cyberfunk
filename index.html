@@ -116,8 +116,11 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.55
 #nxt.show{display:block;animation:pop-in .25s ease;}
 
 /* ── PLAY BUTTON ── */
-.playbtn{padding:.75rem 1.8rem;border-radius:9px;border:2.5px solid var(--gold);background:rgba(184,144,24,.08);color:var(--gold);font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer;transition:all .2s;min-height:50px;}
+.play-row{display:flex;gap:.6rem;align-items:center;justify-content:center;width:100%;}
+.playbtn{padding:.75rem 1.6rem;border-radius:9px;border:2.5px solid var(--gold);background:rgba(184,144,24,.08);color:var(--gold);font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer;transition:all .2s;min-height:50px;flex:1;max-width:200px;}
 .playbtn:hover,.playbtn:active{background:var(--gold);color:#fff;}
+.playbtn-ref{border-color:var(--muted);background:rgba(106,109,80,.08);color:var(--muted);font-size:.88rem;flex:0 0 auto;max-width:140px;}
+.playbtn-ref:hover,.playbtn-ref:active{background:var(--muted);color:#fff;border-color:var(--muted);}
 
 /* ── PIANO ── */
 .pianow{display:flex;justify-content:center;padding:.4rem 0;overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch;}
@@ -298,9 +301,9 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.55
 // ══════════════════════════════════════════════
 //  SUPABASE CONFIG
 // ══════════════════════════════════════════════
-const SUPABASE_URL    = 'https://fuccjqbiyqelafkcsrcf.supabase.co';
-const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1Y2NqcWJpeXFlbGFma2NzcmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNjU2NTYsImV4cCI6MjA4NzY0MTY1Nn0.bqzQcbIbPWXUP60DKIDE-4WoeNvqqejXRhaPtFkfBHY';
-const SUPABASE_TABLE  = 'leaderboard'; // nome da tabela
+const SUPABASE_URL   = 'https://SEU-PROJETO.supabase.co';
+const SUPABASE_ANON  = 'sua-anon-key-aqui';
+const SUPABASE_TABLE = 'leaderboard';
 const SB_ENABLED = SUPABASE_URL.indexOf('SEU-PROJETO') === -1;
 
 async function sbFetch(path,opts={}){
@@ -775,10 +778,27 @@ function render(){
   ct.appendChild(np);
 
   if     (G.phase===1)rLearn();
-  else if(G.phase===2)rIdentify();
-  else if(G.phase===3)rPlace();
-  else if(G.phase===4)rListen();
-  else if(G.phase===5)rPlay();
+  else if(G.phase===2){rIdentify();appendRefPiano();}
+  else if(G.phase===3){rPlace();appendRefPiano();}
+  else if(G.phase===4){rListen();appendRefPiano();}
+  else if(G.phase===5){rPlay();appendRefPiano();}
+}
+
+function appendRefPiano(){
+  const active=ga();
+  const wrap=document.createElement('div');
+  wrap.style.cssText='width:100%;display:flex;flex-direction:column;align-items:center;gap:.3rem;';
+  const lbl=document.createElement('div');
+  lbl.style.cssText='font-family:"Share Tech Mono",monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);';
+  lbl.textContent='// teclado de referência';
+  wrap.appendChild(lbl);
+  // Build piano in listen-only mode (disAll=true skips game callbacks)
+  // But we want sound on click — so we build it with disAll=false but a no-op for onKey
+  const piano=buildPiano(active,()=>{},false);
+  // Mark all keys as non-scoring visually
+  piano.querySelectorAll('.wkey').forEach(k=>{k.style.opacity='0.82';});
+  wrap.appendChild(piano);
+  ct.appendChild(wrap);
 }
 
 // INTRO
@@ -873,10 +893,9 @@ function rPlace(){
 // Drag-staff state
 let _dragSp=null; // current snapped staff position (in semisteps)
 
-function buildStaffDrag(dragSp, revealId=null){
-  // Build staff SVG with a draggable floating note at dragSp position
+function buildStaffDrag(dragSp, revealId=null, ghostSp=null){
   const PL=65,PR=18;
-  let s=`<svg class="ssvg" viewBox="0 0 ${SW} ${SH}" xmlns="http://www.w3.org/2000/svg" id="drag-svg">`;
+  let s=`<svg class="ssvg" viewBox="0 0 ${SW} ${SH}" xmlns="http://www.w3.org/2000/svg" style="cursor:${revealId===null?'crosshair':'default'}">`;
   // Ghost ledger lines
   const gc='rgba(154,158,120,0.28)',gx1=PL,gx2=SW-PR;
   for(let sp=-2;sp>=-10;sp-=2)
@@ -894,119 +913,121 @@ function buildStaffDrag(dragSp, revealId=null){
     if(sp>8)for(let p=10;p<=(sp%2===0?sp:sp+1);p+=2)ll+=`<line x1="${lx1}" y1="${NY(p)}" x2="${lx2}" y2="${NY(p)}" stroke="${col}" stroke-width="1.5"/>`;
     return ll;
   }
-
-  function drawNoteAt(sp, col, cx=NX){
+  function drawNoteAt(sp,col,cx=NX,opacity=1){
     const cy=NY(sp);
     let r=ledgers(sp,cx,col);
-    r+=`<ellipse cx="${cx}" cy="${cy}" rx="12" ry="8.5" fill="${col}" transform="rotate(-12,${cx},${cy})" opacity="0.92"/>`;
+    r+=`<ellipse cx="${cx}" cy="${cy}" rx="12" ry="8.5" fill="${col}" transform="rotate(-12,${cx},${cy})" opacity="${opacity}"/>`;
     const sdir=sp<4?-1:1,sx=sdir===1?cx-11:cx+11;
-    r+=`<line x1="${sx}" y1="${cy}" x2="${sx}" y2="${cy+sdir*46}" stroke="${col}" stroke-width="2"/>`;
+    r+=`<line x1="${sx}" y1="${cy}" x2="${sx}" y2="${cy+sdir*46}" stroke="${col}" stroke-width="2" opacity="${opacity}"/>`;
     return r;
   }
 
-  // Draw draggable note (orange if no answer yet, green/red after)
-  if(dragSp!==null){
-    const col=revealId===null?'#d06010':'transparent'; // hide if revealing
-    if(revealId===null)s+=drawNoteAt(dragSp,'#d06010');
+  // Ghost hover note (desktop only, semi-transparent)
+  if(ghostSp!==null&&!revealId){
+    s+=drawNoteAt(ghostSp,'#d06010',NX,0.35);
+  }
+
+  // Mobile: confirmed drag note
+  if(dragSp!==null&&ghostSp===null&&!revealId){
+    s+=drawNoteAt(dragSp,'#d06010',NX,0.92);
   }
 
   // Reveal correct note after answer
   if(revealId){
-    const rn=nd(revealId);const rsp=rn.s+5;
-    s+=drawNoteAt(rsp,'#3a8a30');
+    const rn=nd(revealId);
+    s+=drawNoteAt(rn.s+5,'#3a8a30',NX,1);
   }
 
-  // Desktop: hover zones for all unlocked notes (only if no touch and not answered)
-  if(!('ontouchstart' in window)&&dragSp===null&&!revealId){
-    ga().forEach(nid=>{
-      const nn=nd(nid);const sp2=nn.s+5,cy2b=NY(sp2),zx=NX-21,zy=cy2b-11;
-      s+=`<rect x="${zx}" y="${zy}" width="42" height="22" rx="4"
-        fill="#d06010" fill-opacity="0"
-        onmouseover="this.setAttribute('fill-opacity','0.2')"
-        onmouseout="this.setAttribute('fill-opacity','0')"
-        onclick="hPlace('${nid}')"
-        style="cursor:pointer;"/>`;
-    });
-  }
   s+=`</svg>`;return s;
 }
 
 function initDragStaff(note){
   const staffEl=document.getElementById('drag-staff');
   const isTouchDevice='ontouchstart' in window||navigator.maxTouchPoints>0;
-
-  // Get the valid staff positions from active notes
   const validSps=ga().map(nid=>nd(nid).s+5);
   const minSp=Math.min(...validSps),maxSp=Math.max(...validSps);
 
-  // Start at middle of range
   _dragSp=validSps[Math.floor(validSps.length/2)];
 
-  function renderDrag(rev=null){
-    staffEl.innerHTML=buildStaffDrag(_dragSp,rev);
+  function renderDrag(ghostSp=null,revealId=null){
+    staffEl.innerHTML=buildStaffDrag(_dragSp,revealId,ghostSp);
   }
-  renderDrag();
 
-  // Show confirm button only on touch devices
   if(isTouchDevice){
+    // ── MOBILE: drag up/down ──
     document.getElementById('drag-confirm').style.display='block';
-  }
+    renderDrag();
 
-  if(!isTouchDevice){
-    // Desktop: just use the click zones rendered in buildStaffDrag
-    return;
-  }
+    let startY=null,startSp=null,_lastDragSp=_dragSp;
+    const PX_PER_STEP=LS/2;
 
-  // Touch drag logic
-  let startY=null,startSp=null;
-  // Each step = LS/2 pixels (half a line space = one semistep on staff)
-  const PX_PER_STEP=LS/2; // 11px per half-step
-
-  function snapToValid(sp){
-    // Snap to nearest valid position
-    return validSps.reduce((best,v)=>Math.abs(v-sp)<Math.abs(best-sp)?v:best, validSps[0]);
-  }
-
-  staffEl.addEventListener('touchstart',e=>{
-    if(G.ans)return;
-    e.preventDefault();
-    startY=e.touches[0].clientY;
-    startSp=_dragSp;
-  },{passive:false});
-
-  let _lastDragSp=_dragSp;
-  staffEl.addEventListener('touchmove',e=>{
-    if(G.ans||startY===null)return;
-    e.preventDefault();
-    const dy=startY-e.touches[0].clientY;
-    const deltaSp=Math.round(dy/PX_PER_STEP);
-    const raw=startSp+deltaSp;
-    const clamped=Math.max(minSp,Math.min(maxSp,raw));
-    _dragSp=snapToValid(clamped);
-    if(_dragSp!==_lastDragSp){
-      renderDrag();
-      // Soft preview tick on each discrete step
-      const matchNote=ga().find(nid=>nd(nid).s+5===_dragSp);
-      if(matchNote){
-        const c=ctx2(),o=c.createOscillator(),g=c.createGain();
-        o.type='sine';o.frequency.value=nd(matchNote).f;
-        o.connect(g);g.connect(c.destination);
-        g.gain.setValueAtTime(0.08,c.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.15);
-        o.start(c.currentTime);o.stop(c.currentTime+0.18);
-      }
-      _lastDragSp=_dragSp;
+    function snapToValid(sp){
+      return validSps.reduce((b,v)=>Math.abs(v-sp)<Math.abs(b-sp)?v:b,validSps[0]);
     }
-  },{passive:false});
+    staffEl.addEventListener('touchstart',e=>{
+      if(G.ans)return;e.preventDefault();
+      startY=e.touches[0].clientY;startSp=_dragSp;
+    },{passive:false});
+    staffEl.addEventListener('touchmove',e=>{
+      if(G.ans||startY===null)return;e.preventDefault();
+      const dy=startY-e.touches[0].clientY;
+      _dragSp=snapToValid(Math.max(minSp,Math.min(maxSp,startSp+Math.round(dy/PX_PER_STEP))));
+      if(_dragSp!==_lastDragSp){
+        renderDrag();
+        const mn=ga().find(nid=>nd(nid).s+5===_dragSp);
+        if(mn){const c=ctx2(),o=c.createOscillator(),g=c.createGain();
+          o.type='sine';o.frequency.value=nd(mn).f;o.connect(g);g.connect(c.destination);
+          g.gain.setValueAtTime(0.08,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.15);
+          o.start(c.currentTime);o.stop(c.currentTime+0.18);}
+        _lastDragSp=_dragSp;
+      }
+    },{passive:false});
+    staffEl.addEventListener('touchend',e=>{
+      if(G.ans||startY===null)return;e.preventDefault();
+      const mn=ga().find(nid=>nd(nid).s+5===_dragSp);
+      if(mn)playNote(nd(mn).f,0.4);
+      startY=null;
+    },{passive:false});
 
-  staffEl.addEventListener('touchend',e=>{
-    if(G.ans||startY===null)return;
-    e.preventDefault();
-    // Play soft preview of current position
-    const matchNote=ga().find(nid=>nd(nid).s+5===_dragSp);
-    if(matchNote)playNote(nd(matchNote).f,0.4);
-    startY=null;
-  },{passive:false});
+  }else{
+    // ── DESKTOP: mouse hover shows ghost note, click confirms immediately ──
+    let _hoverSp=null;
+
+    // Initial render — no ghost yet
+    renderDrag(null);
+
+    // We attach events to the wrapper div (captures mouse over whole staff area)
+    staffEl.addEventListener('mousemove',e=>{
+      if(G.ans)return;
+      // Convert mouse Y to staff position
+      const rect=staffEl.getBoundingClientRect();
+      // SVG viewBox height = SH, rendered height = rect.height
+      const scale=SH/rect.height;
+      const svgY=(e.clientY-rect.top)*scale;
+      // Invert NY: sp = (BY - svgY) / (LS/2)
+      const rawSp=(BY-svgY)/(LS/2);
+      // Snap to nearest valid position
+      const snapped=validSps.reduce((b,v)=>Math.abs(v-rawSp)<Math.abs(b-rawSp)?v:b,validSps[0]);
+      if(snapped!==_hoverSp){
+        _hoverSp=snapped;
+        _dragSp=snapped; // keep _dragSp in sync so hPlace can read it
+        renderDrag(_hoverSp);
+      }
+    });
+
+    staffEl.addEventListener('mouseleave',()=>{
+      if(G.ans)return;
+      _hoverSp=null;
+      renderDrag(null);
+    });
+
+    staffEl.addEventListener('click',e=>{
+      if(G.ans||_hoverSp===null)return;
+      // Find which note id corresponds to the hovered sp
+      const chosen=ga().find(nid=>nd(nid).s+5===_hoverSp);
+      if(chosen)hPlace(chosen);
+    });
+  }
 }
 
 // Called when confirm button pressed (touch)
@@ -1031,15 +1052,20 @@ function hPlaceDrag(){
   const nb=document.getElementById('nxt');if(nb)nb.classList.add('show');
 }
 
-// Desktop click handler for phase 3 (kept as hPlace)
+// Desktop click handler for phase 3
 function hPlace(chosen){
   if(G.ans||!lockAnswer())return;
-  const cor=G.cur;const staffEl=document.getElementById('drag-staff');const fb=document.getElementById('fb');
+  const cor=G.cur;
+  const staffEl=document.getElementById('drag-staff');
+  const fb=document.getElementById('fb');
   if(chosen===cor){
-    staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null);
-    fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk();
+    // Show solid orange note at correct position briefly, then advance
+    staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null);
+    fb.textContent='CERTO!';fb.className='ok';
+    playNote(nd(cor).f,.8);onOk();
   }else{
-    staffEl.innerHTML=buildStaffDrag(nd(chosen).s+5,cor);
+    // Show chosen position faded + reveal correct in green
+    staffEl.innerHTML=buildStaffDrag(nd(chosen).s+5,cor,null);
     fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';
     playNote(nd(cor).f,.8);onErr();
   }
@@ -1050,14 +1076,19 @@ function hPlace(chosen){
 function rListen(){
   if(!G.cur||G.ans){pickNew();buildSOpts();}
   const note=G.cur;const n=nd(note);
+  const prev=G.lastNote?nd(G.lastNote):null;
   const card=document.createElement('div');card.className='card pop-in';card.id='acard';
+  const prevBtn=prev
+    ?`<button class="playbtn playbtn-ref" onclick="playNote(${prev.f},1.2)">&#9834; ${prev.lB}</button>`
+    :'';
   card.innerHTML=`<div class="ptag">Fase 4 — Ouça e identifique</div>
-    <button class="playbtn" onclick="playNote(${n.f},1.2)">&#9834; Tocar nota</button>
-    <div id="ref-wrap"></div>
+    <div class="play-row">
+      ${prevBtn}
+      <button class="playbtn playbtn-main" onclick="playNote(${n.f},1.2)">&#9834; Tocar nota</button>
+    </div>
     <div class="opts">${G.sopts.map(nid=>`<button class="obtn" id="ob-${nid}" onclick="hId('${nid}')">${nd(nid).lB}</button>`).join('')}</div>
     <div id="fb"></div><button id="nxt" onclick="nextQ()">Próxima &#8594;</button>`;
   ct.appendChild(card);
-  const rp=buildRefPanel();if(rp)card.querySelector('#ref-wrap').appendChild(rp);
   setTimeout(()=>playNote(n.f,1.2),300);
 }
 
@@ -1065,14 +1096,19 @@ function rListen(){
 function rPlay(){
   if(!G.cur||G.ans)pickNew();
   const note=G.cur;const n=nd(note);const active=ga();
+  const prev=G.lastNote?nd(G.lastNote):null;
   const card=document.createElement('div');card.className='card pop-in';card.id='acard';
+  const prevBtn=prev
+    ?`<button class="playbtn playbtn-ref" onclick="playNote(${prev.f},1.2)">&#9834; ${prev.lB}</button>`
+    :'';
   card.innerHTML=`<div class="ptag">Fase 5 — Toque no teclado</div>
-    <button class="playbtn" onclick="playNote(${n.f},1.2)">&#9834; Tocar nota</button>
-    <div id="ref-wrap"></div>
+    <div class="play-row">
+      ${prevBtn}
+      <button class="playbtn playbtn-main" onclick="playNote(${n.f},1.2)">&#9834; Tocar nota</button>
+    </div>
     <div id="pia"></div>
     <div id="fb"></div><button id="nxt" onclick="nextQ()">Próxima &#8594;</button>`;
   ct.appendChild(card);
-  const rp=buildRefPanel();if(rp)card.querySelector('#ref-wrap').appendChild(rp);
   card.querySelector('#pia').appendChild(buildPiano(active,(cid,btn)=>hPiano(cid,btn)));
   setTimeout(()=>playNote(n.f,1.2),300);
 }

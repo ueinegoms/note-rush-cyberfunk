@@ -2,9 +2,12 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>NOTE RUSH CYBERFUNK</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>NOTE RUSH</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;900&family=Share+Tech+Mono&family=Black+Ops+One&family=Boogaloo&family=Teko:wght@600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#c5cca0;--panel:#d2d8ae;--card:#eceedc;--panel2:#e4e8c8;
@@ -64,7 +67,7 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.55
 .ptoggle span{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#c8cfa0;}
 
 /* ── CONTENT ── */
-#ct{flex:1;max-width:680px;margin:0 auto;padding:1rem .85rem 2.5rem;width:100%;display:flex;flex-direction:column;align-items:center;gap:.8rem;}
+#ct{flex:1;max-width:680px;margin:0 auto;padding:1rem .85rem 2.5rem;width:100%;display:flex;flex-direction:column;align-items:center;gap:.8rem;overflow:visible;}
 
 /* ── PHASE TABS ── */
 #ptabs{display:flex;gap:3px;width:100%;background:var(--panel);border:2px solid var(--border);border-radius:8px;padding:3px;}
@@ -235,7 +238,25 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.55
   .obtn{padding:.75rem .9rem;font-size:.95rem;min-height:50px;}
   .ptab{font-size:.5rem;}
 }
+/* ── HIGH DPR / iPhone fix ── */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+  .obtn, #nxt, .playbtn, .drag-confirm, #sbtn, .submit-btn, .nbtn {
+    min-height: 44px;
+  }
+}
+@media (-webkit-min-device-pixel-ratio: 3), (min-resolution: 3dppx) {
+  /* iPhone 12/13/14/15 Pro — 3× DPR */
+  .obtn {
+    padding: 1rem 1.4rem;
+    font-size: 1.05rem;
+    min-height: 50px;
+  }
+  #nxt, .playbtn, .drag-confirm { min-height: 50px; padding: .9rem 2rem; }
+  .ptab { padding: .5rem .1rem; }
+  header { padding: .6rem 1rem; }
+}
 </style>
+<link id="theme-css" rel="stylesheet" href="">
 </head>
 <body>
 
@@ -292,48 +313,20 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.55
       <label class="ptoggle"><input type="checkbox" id="ph4" checked><span>4 Ouvir</span></label>
       <label class="ptoggle"><input type="checkbox" id="ph5" checked><span>5 Tocar</span></label>
     </div>
+    <div class="sr">
+      <label>Tema:</label>
+      <select id="theme-sel">
+        <option value="cyberfunk" selected>🌿 Cyberfunk</option>
+        <option value="hypernote">🔮 Hypernote</option>
+      </select>
+    </div>
   </div>
 
   <div id="ct"></div>
 </div>
 
+<script src="scores.js"></script>
 <script>
-// ══════════════════════════════════════════════
-//  SUPABASE CONFIG
-// ══════════════════════════════════════════════
-const SUPABASE_URL   = 'https://SEU-PROJETO.supabase.co';
-const SUPABASE_ANON  = 'sua-anon-key-aqui';
-const SUPABASE_TABLE = 'leaderboard';
-const SB_ENABLED = SUPABASE_URL.indexOf('SEU-PROJETO') === -1;
-
-async function sbFetch(path,opts={}){
-  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{
-    headers:{'apikey':SUPABASE_ANON,'Authorization':'Bearer '+SUPABASE_ANON,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
-    ...opts
-  });
-  if(!res.ok)throw new Error('SB '+res.status);
-  return res.json();
-}
-async function getLeaderboard(){
-  if(!SB_ENABLED)return getLocalLB();
-  try{return await sbFetch(`${SUPABASE_TABLE}?select=name,score&order=score.desc&limit=5`);}
-  catch{return getLocalLB();}
-}
-async function submitScore(name,score){
-  if(!SB_ENABLED){saveLocalLB(name,score);return;}
-  try{
-    await sbFetch(SUPABASE_TABLE,{method:'POST',body:JSON.stringify({name,score})});
-    const all=await sbFetch(`${SUPABASE_TABLE}?select=id,score&order=score.desc`);
-    if(all.length>5)for(const r of all.slice(5))await sbFetch(`${SUPABASE_TABLE}?id=eq.${r.id}`,{method:'DELETE'});
-  }catch{saveLocalLB(name,score);}
-}
-function getLocalLB(){try{return JSON.parse(localStorage.getItem('nr_lb')||'[]');}catch{return[];}}
-function saveLocalLB(name,score){
-  let lb=getLocalLB();lb.push({name,score});
-  lb.sort((a,b)=>b.score-a.score);lb=lb.slice(0,5);
-  localStorage.setItem('nr_lb',JSON.stringify(lb));
-}
-
 // ══════════════════════════════════════════════
 //  NOTE DATA
 // ══════════════════════════════════════════════
@@ -417,6 +410,31 @@ document.getElementById('nr').addEventListener('change',function(){
   if(+el.value>max){el.value=max;document.getElementById('sni-v').textContent=max;}
 });
 const S=()=>({sfp:+document.getElementById('sfp').value,sni:+document.getElementById('sni').value});
+
+// ══════════════════════════════════════════════
+//  THEME SWITCHING
+// ══════════════════════════════════════════════
+const THEME_URLS={
+  cyberfunk:'theme-cyberfunk.css',
+  hypernote:'theme-hypernote.css',
+};
+function applyTheme(name){
+  const link=document.getElementById('theme-css');
+  link.href=THEME_URLS[name]||'';
+  document.body.dataset.theme=name;
+  localStorage.setItem('nr_theme',name);
+  // update logo title text for hypernote
+  const logoEl=document.querySelector('.logo-title');
+  if(logoEl)logoEl.textContent=name==='hypernote'?'HYPERNOTE':'NOTE RUSH CYBERFUNK';
+}
+// Init theme
+(()=>{
+  const saved=localStorage.getItem('nr_theme')||'cyberfunk';
+  const sel=document.getElementById('theme-sel');
+  if(sel)sel.value=saved;
+  applyTheme(saved);
+})();
+document.getElementById('theme-sel').addEventListener('change',function(){applyTheme(this.value);});
 
 // ══════════════════════════════════════════════
 //  AUDIO — randomized timbres
@@ -655,7 +673,24 @@ function buildPiano(activeNotes,onKey,disAll=false){
     }
     piano.appendChild(btn);
   });
-  wrap.appendChild(piano);return wrap;
+  wrap.appendChild(piano);
+
+  // centraliza o intervalo de notas ativas dentro do teclado visível
+  const activeWhiteIdx=whites
+    .map((w,i)=>w.id&&activeNotes.includes(w.id)?i:-1)
+    .filter(i=>i>=0);
+  if(activeWhiteIdx.length){
+    const first=activeWhiteIdx[0];
+    const last=activeWhiteIdx[activeWhiteIdx.length-1];
+    const centerX=((first+last+1)/2)*(WW+GAP);
+    requestAnimationFrame(()=>{
+      const visible=wrap.clientWidth||wrap.offsetWidth||0;
+      const maxScroll=Math.max(0,piano.scrollWidth-visible);
+      const target=Math.min(Math.max(centerX-visible/2,0),maxScroll);
+      wrap.scrollLeft=target;
+    });
+  }
+  return wrap;
 }
 
 // ══════════════════════════════════════════════
@@ -668,66 +703,6 @@ function confetti(){
     el.style.cssText=`left:${20+Math.random()*60}vw;top:${10+Math.random()*30}vh;background:${cols[i%cols.length]};animation-delay:${Math.random()*.28}s;animation-duration:${.6+Math.random()*.5}s;transform:rotate(${Math.random()*360}deg)`;
     document.body.appendChild(el);setTimeout(()=>el.remove(),1100);
   }
-}
-
-// ══════════════════════════════════════════════
-//  LEADERBOARD
-// ══════════════════════════════════════════════
-async function renderLeaderboard(container,hlName=null,hlScore=null){
-  container.innerHTML=`<div class="lb-loading">CARREGANDO RANKING...</div>`;
-  let rows;try{rows=await getLeaderboard();}catch{rows=[];}
-  container.innerHTML='';
-  const t=document.createElement('div');t.className='lb-title';t.textContent='🏆 TOP 5';container.appendChild(t);
-  if(!rows||rows.length===0){
-    const e=document.createElement('div');e.className='lb-empty';e.textContent='NENHUMA PONTUAÇÃO AINDA';container.appendChild(e);return;
-  }
-  rows.slice(0,5).forEach((row,i)=>{
-    const div=document.createElement('div');
-    const isNew=hlName&&row.name===hlName&&row.score===hlScore;
-    div.className='lb-row'+(i===0?' top1':'')+(isNew?' new-entry':'');
-    // Render name directly — supports emoji and unicode
-    const nameEl=document.createElement('span');nameEl.className='lb-name';nameEl.textContent=row.name;
-    div.innerHTML=`<span class="lb-rank${i===0?' r1':''}">${['🥇','🥈','🥉','4','5'][i]}</span>`;
-    div.appendChild(nameEl);
-    const sc=document.createElement('span');sc.className='lb-score';sc.textContent='x'+row.score;
-    div.appendChild(sc);
-    container.appendChild(div);
-  });
-}
-
-// ══════════════════════════════════════════════
-//  NAME ENTRY — supports emoji & special chars
-// ══════════════════════════════════════════════
-function buildNameEntry(combo,onSubmit,onSkip){
-  const wrap=document.createElement('div');wrap.className='name-entry';
-  const h3=document.createElement('h3');h3.textContent='SALVAR NO RANKING';wrap.appendChild(h3);
-
-  // Single text input — supports any Unicode, emoji picker on mobile
-  const inputRow=document.createElement('div');inputRow.style.cssText='display:flex;gap:.5rem;align-items:center;width:100%;max-width:280px;';
-  const inp=document.createElement('input');
-  inp.type='text';
-  inp.maxLength=8; // up to 8 chars / emoji
-  inp.placeholder='SEU NOME 🎵';
-  inp.style.cssText=`flex:1;padding:.65rem .8rem;border-radius:8px;border:2.5px solid var(--orange);background:#fff;
-    font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--text);outline:none;text-align:center;
-    min-height:50px;`;
-  inp.addEventListener('input',()=>{
-    // trim to 8 grapheme clusters (handles emoji)
-    const seg=[...new Intl.Segmenter().segment(inp.value)];
-    if(seg.length>8)inp.value=seg.slice(0,8).map(s=>s.segment).join('');
-  });
-  inputRow.appendChild(inp);
-  wrap.appendChild(inputRow);
-
-  const sb=document.createElement('button');sb.className='submit-btn';sb.textContent='✓ ENVIAR';
-  sb.addEventListener('click',()=>{
-    const val=(inp.value||'???').trim()||'???';
-    onSubmit(val);
-  });
-  const sk=document.createElement('button');sk.className='skip-btn';sk.textContent='pular';sk.addEventListener('click',onSkip);
-  wrap.appendChild(sb);wrap.appendChild(sk);
-  setTimeout(()=>inp.focus(),100);
-  return wrap;
 }
 
 // ══════════════════════════════════════════════
@@ -786,19 +761,118 @@ function render(){
 
 function appendRefPiano(){
   const active=ga();
-  const wrap=document.createElement('div');
-  wrap.style.cssText='width:100%;display:flex;flex-direction:column;align-items:center;gap:.3rem;';
+  const allScale=gn();
+
+  const outer=document.createElement('div');
+  outer.className='ref-piano-outer';
+  outer.style.cssText=[
+    'width:100%',
+    'display:flex',
+    'flex-direction:column',
+    'align-items:center',
+    'gap:.2rem',
+    'margin-top:.4rem',
+  ].join(';');
+
   const lbl=document.createElement('div');
-  lbl.style.cssText='font-family:"Share Tech Mono",monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);';
+  lbl.style.cssText='font-family:var(--font-mono,"Share Tech Mono",monospace);font-size:.52rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#6a6d50);padding:.1rem .75rem 0;';
   lbl.textContent='// teclado de referência';
-  wrap.appendChild(lbl);
-  // Build piano in listen-only mode (disAll=true skips game callbacks)
-  // But we want sound on click — so we build it with disAll=false but a no-op for onKey
-  const piano=buildPiano(active,()=>{},false);
-  // Mark all keys as non-scoring visually
-  piano.querySelectorAll('.wkey').forEach(k=>{k.style.opacity='0.82';});
+  outer.appendChild(lbl);
+
+  const scaleChrom=CHROMATIC.filter(k=>k.id&&allScale.includes(k.id));
+  if(!scaleChrom.length){ct.appendChild(outer);return;}
+  const minOct=Math.min(...scaleChrom.map(k=>k.oct));
+  const maxOct=Math.max(...scaleChrom.map(k=>k.oct));
+  const range=CHROMATIC.filter(k=>k.oct>=minOct&&k.oct<=maxOct);
+  const whites=range.filter(k=>!k.isB);
+
+  const GAP=2;
+  const WW=32;
+  const WH=100;
+  const BW=Math.round(WW*0.62);
+  const BH=Math.round(WH*0.6);
+  const totalW=whites.length*(WW+GAP);
+
+  const wrap=document.createElement('div');
+  wrap.className='pianow';
+  const piano=document.createElement('div');
+  piano.className='piano';
+  piano.style.width=totalW+'px';
+  piano.style.height=WH+'px';
+
+  const isCyberfunk=!document.body.dataset.theme||document.body.dataset.theme==='cyberfunk';
+  const wActiveColor=isCyberfunk?'#f4f4ee':'#e8d0ff';
+  const wScaleColor =isCyberfunk?'#e4e4d8':'#c8a0ee';
+  const wBgColor    =isCyberfunk?'#d8d8ce':'#b088cc';
+  const bColor      =isCyberfunk?'#2a2418':'#110022';
+  const wPressActive=isCyberfunk?'#fde0b0':'#ff88ff';
+  const wPressScale =isCyberfunk?'#d8d8c4':'#aa44dd';
+  const bPress      =isCyberfunk?'#4a3a28':'#440088';
+
+  whites.forEach((k,wi)=>{
+    const isActive=k.id&&active.includes(k.id);
+    const inScale=k.id&&allScale.includes(k.id);
+    const x=wi*(WW+GAP);
+    const btn=document.createElement('div');
+    const bgDefault=isActive?wActiveColor:inScale?wScaleColor:wBgColor;
+    btn.className='wkey'+(!inScale?' inactive':'')+(isActive?' ck':'');
+    btn.style.cssText=`left:${x}px;width:${WW}px;height:${WH}px;background:${bgDefault};`;
+    if(isActive&&k.id){
+      const n=nd(k.id);
+      const lbEl=document.createElement('div');
+      const fs=Math.max(7,Math.min(11,WW*0.3));
+      lbEl.style.cssText=`font-family:'Share Tech Mono',monospace;font-size:${fs}px;color:#6a6d50;text-align:center;line-height:1.1;pointer-events:none;white-space:pre;`;
+      lbEl.textContent=n.lb.replace(/(₃|₄|₅)/,'\n$1');
+      btn.appendChild(lbEl);
+    }
+    if(k.id){
+      const n=nd(k.id);
+      if(n){
+        const press=()=>{playNote(n.f,.55);btn.style.background=isActive?wPressActive:wPressScale;btn.classList.add('pressed');};
+        const rel=()=>{btn.style.background=bgDefault;btn.classList.remove('pressed');};
+        btn.addEventListener('mousedown',press);btn.addEventListener('mouseup',rel);btn.addEventListener('mouseleave',rel);
+        btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
+        btn.addEventListener('touchend',  e=>{e.preventDefault();rel();  },{passive:false});
+      }
+    }
+    piano.appendChild(btn);
+  });
+
+  range.filter(k=>k.isB).forEach(k=>{
+    const lwi=whites.findIndex(w=>w.oct===k.oct&&w.pc===k.pc-1);
+    if(lwi<0)return;
+    const bx=lwi*(WW+GAP)+WW*0.63;
+    const btn=document.createElement('div');
+    btn.className='bkey';
+    btn.style.cssText=`left:${bx}px;top:0;width:${BW}px;height:${BH}px;background:${bColor};`;
+    const press=()=>{playNote(k.f,.55);btn.style.background=bPress;btn.classList.add('pressed');};
+    const rel=()=>{btn.style.background=bColor;btn.classList.remove('pressed');};
+    btn.addEventListener('mousedown',press);btn.addEventListener('mouseup',rel);btn.addEventListener('mouseleave',rel);
+    btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
+    btn.addEventListener('touchend',  e=>{e.preventDefault();rel();  },{passive:false});
+    piano.appendChild(btn);
+  });
+
   wrap.appendChild(piano);
-  ct.appendChild(wrap);
+  outer.appendChild(wrap);
+
+  // centralizar o intervalo de notas ativas dentro do teclado visível
+  const activeWhiteIdx=whites
+    .map((w,i)=>w.id&&active.includes(w.id)?i:-1)
+    .filter(i=>i>=0);
+  if(activeWhiteIdx.length){
+    const first=activeWhiteIdx[0];
+    const last=activeWhiteIdx[activeWhiteIdx.length-1];
+    const centerX=((first+last+1)/2)*(WW+GAP);
+    requestAnimationFrame(()=>{
+      const visible=wrap.clientWidth||wrap.offsetWidth||0;
+      const maxScroll=Math.max(0,piano.scrollWidth-visible);
+      const target=Math.min(Math.max(centerX-visible/2,0),maxScroll);
+      wrap.scrollLeft=target;
+    });
+  }
+
+  ct.appendChild(outer);
 }
 
 // INTRO

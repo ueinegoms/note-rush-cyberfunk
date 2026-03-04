@@ -2,7 +2,7 @@
    TEMA: NOTE RUSH CYBERFUNK
    Sage green, laranja queimado, teclado marmorizado
 ════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;900&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playwrite+PE&family=Dela+Gothic+One&display=swap');
 
 :root {
   --bg:#c5cca0; --panel:#d2d8ae; --card:#eceedc; --panel2:#e4e8c8;
@@ -11,9 +11,9 @@
   --ok:#3a8a30; --err:#c82828; --gold:#b89018;
   --cfg-bg:#1a1a10; --cfg-border:#c85010;
   --sw:52px;
-  --font-display:'Fredoka One',cursive;
-  --font-mono:'Share Tech Mono',monospace;
-  --font-body:'Nunito',sans-serif;
+  --font-display:'Playwrite PE',cursive;
+  --font-mono:'Dela Gothic One',sans-serif;
+  --font-body:'Dela Gothic One',sans-serif;
   --radius:12px; --radius-sm:8px;
   --card-top-bar:linear-gradient(90deg,var(--accent),var(--gold),var(--accent2));
   --logo-shadow:2px 2px 0 rgba(0,0,0,.12);

@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <title>NOTE RUSH</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;900&family=Share+Tech+Mono&family=Black+Ops+One&family=Boogaloo&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;900&family=Share+Tech+Mono&family=Black+Ops+One&family=Boogaloo&family=Teko:wght@600;700&family=Playwrite+PE&family=Dela+Gothic+One&family=Major+Mono+Display&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#c5cca0;--panel:#d2d8ae;--card:#eceedc;--panel2:#e4e8c8;
@@ -18,7 +18,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;-webkit-tap-highlight-color:transparent;}
-body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body,'Nunito',sans-serif);min-height:100vh;display:flex;flex-direction:column;}
 
 /* ── SWIRL ── */
 .swirl{position:fixed;left:0;top:0;bottom:0;width:var(--sw);z-index:20;overflow:hidden;}
@@ -188,10 +188,10 @@ header{background:var(--panel);border-bottom:3px solid var(--orange);padding:.55
 
 /* ── INTRO ── */
 #intro{display:flex;flex-direction:column;align-items:center;gap:1.3rem;padding:1.5rem .8rem;text-align:center;}
-.bigclef{font-family:'Georgia',serif;font-size:clamp(5rem,15vw,8rem);line-height:1;color:var(--orange);text-shadow:4px 4px 0 rgba(0,0,0,.13),-1px -1px 0 var(--orange2);animation:cflt 2.8s ease-in-out infinite;}
+.bigclef{font-family:var(--font-display,'Fredoka One',cursive);font-size:clamp(5rem,15vw,8rem);line-height:1;color:var(--orange);text-shadow:4px 4px 0 rgba(0,0,0,.13),-1px -1px 0 var(--orange2);animation:cflt 2.8s ease-in-out infinite;}
 @keyframes cflt{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-10px) rotate(3deg);}}
-.ititle{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,7vw,3.4rem);color:var(--orange);text-shadow:4px 4px 0 rgba(0,0,0,.1);line-height:1;}
-.idesc{max-width:340px;font-size:.86rem;color:var(--muted);line-height:1.65;font-weight:600;}
+.ititle{font-family:var(--font-display,'Fredoka One',cursive);font-size:clamp(1.8rem,7vw,3.4rem);color:var(--orange);text-shadow:4px 4px 0 rgba(0,0,0,.1);line-height:1;}
+.idesc{max-width:340px;font-size:16px;color:var(--muted);line-height:1.8;font-family:var(--font-body,'Nunito',sans-serif);}
 .pills{display:flex;flex-direction:column;gap:.4rem;width:100%;max-width:320px;text-align:left;}
 .pill{display:flex;align-items:center;gap:.7rem;padding:.52rem .85rem;background:var(--panel);border:2px solid var(--border);border-radius:8px;font-size:.82rem;font-weight:700;}
 .pn{font-family:'Fredoka One',cursive;font-size:1.05rem;color:var(--orange);min-width:20px;text-align:center;}
@@ -626,10 +626,14 @@ function buildPiano(activeNotes,onKey,disAll=false){
   const maxOct=Math.max(...activeChrom.map(k=>k.oct));
   const range=CHROMATIC.filter(k=>k.oct>=minOct&&k.oct<=maxOct);
   const whites=range.filter(k=>!k.isB);
-  const WW=32,GAP=2,totalW=whites.length*(WW+GAP);
+  const isNarrow=window.innerWidth<=540;
+  const GAP=2;
+  const WW=isNarrow?30:42;
+  const WH=isNarrow?88:112;
+  const totalW=whites.length*(WW+GAP);
   const wrap=document.createElement('div');wrap.className='pianow';
   const piano=document.createElement('div');piano.className='piano';
-  piano.style.width=totalW+'px';piano.style.height='100px';
+  piano.style.width=totalW+'px';piano.style.height=WH+'px';
 
   whites.forEach((k,wi)=>{
     const isActive=k.id&&activeNotes.includes(k.id);

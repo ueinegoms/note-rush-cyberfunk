@@ -4,7 +4,7 @@
    Inspirado em: Hyperfunk, Funktastica, Shinigami, 
    art-core maximalista
 ═══════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Boogaloo&family=Teko:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap');
 
 :root {
   /* core palette — saturação máxima */
@@ -27,9 +27,9 @@
   --orange2:var(--accent2);
 
   /* typography */
-  --font-display:'Black Ops One',cursive;
-  --font-mono:'Teko',sans-serif;
-  --font-body:'Boogaloo',cursive;
+  --font-display:'Major Mono Display',monospace;
+  --font-mono:'Major Mono Display',monospace;
+  --font-body:'Major Mono Display',monospace;
 
   /* geometry — mais agressivo */
   --radius:4px;
@@ -73,14 +73,14 @@ header::after {
 @keyframes rainbow-slide{0%{background-position:0%}100%{background-position:200%}}
 
 .logo-title {
-  font-family: 'Black Ops One', cursive !important;
+  font-family: var(--font-display) !important;
   font-size: clamp(1rem,3.5vw,1.7rem) !important;
   color: #fff !important;
   text-shadow: 3px 3px 0 #ff00e5, -2px -2px 0 #00e5ff, 0 0 30px rgba(255,0,229,.8) !important;
   letter-spacing: .08em;
 }
 .logo-sub {
-  font-family: 'Teko', sans-serif !important;
+  font-family: var(--font-mono) !important;
   color: #ff00e5 !important;
   letter-spacing: .3em !important;
   font-size: .7rem !important;

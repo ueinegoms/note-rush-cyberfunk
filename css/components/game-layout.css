@@ -1,0 +1,67 @@
+/* ══════════════════════════════════════
+   GAME HEADER & PAGE LAYOUT
+══════════════════════════════════════ */
+
+#game-header {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: transparent;
+  padding: 20px 1.2rem;
+  align-items: center;
+  justify-content: space-between;
+}
+#game-header.show { 
+  display: flex; 
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-logo-icon svg { 
+  width: 32px; 
+  height: 32px; 
+}
+
+.header-logo-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.header-score-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--yellow);
+  line-height: 1;
+}
+
+/* ── GAME PAGE ── */
+#game-page {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+}
+
+#game-page.show { 
+  display: flex; 
+}
+
+#ct {
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

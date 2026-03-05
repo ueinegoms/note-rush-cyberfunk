@@ -1,0 +1,183 @@
+/* ══════════════════════════════════════
+   ALL BUTTON VARIANTS
+══════════════════════════════════════ */
+
+/* ── JOGAR (PLAY) - Main CTA button ── */
+.jogar-btn {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 25px;
+  background: var(--yellow);
+  color: var(--bg);
+  border: none;
+  border-radius: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.jogar-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+}
+
+/* ── PLAYBTN (Play/Listen buttons) ── */
+.playbtn {
+  padding: 1rem 1.2rem;
+  background: var(--yellow);
+  border: none;
+  border-radius: 12px;
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  min-height: 44px;
+  transition: opacity 0.1s;
+}
+
+.playbtn:hover, .playbtn:active { 
+  opacity: 0.9; 
+}
+
+/* Reference piano play button (dimmed) */
+.playbtn-ref { 
+  opacity: 0.6; 
+  background: var(--bg); 
+  color: var(--yellow); 
+  border: 2px solid var(--yellow); 
+}
+
+.play-row { 
+  display: flex; 
+  gap: 0.5rem; 
+  flex-wrap: wrap; 
+}
+
+/* ── NBTN (Navigation buttons: Prev/Next) ── */
+.nbtn {
+  flex: 1;
+  padding: 1rem;
+  background: var(--bg);
+  border: 2px solid var(--yellow);
+  border-radius: 12px;
+  color: var(--yellow);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  min-height: 48px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.nbtn:hover, .nbtn:active { 
+  background: var(--yellow); 
+  color: var(--bg); 
+}
+
+/* GO variant (filled) */
+.nbtn.go { 
+  background: var(--yellow); 
+  color: var(--bg); 
+  border: none; 
+}
+
+.nbtn.go:hover { 
+  opacity: 0.9; 
+}
+
+/* ── OBTN (Option buttons for multiple choice) ── */
+.obtn {
+  flex: 1;
+  min-width: 120px;
+  padding: 1rem;
+  background: var(--bg);
+  border: 2px solid rgba(255,255,94,0.4);
+  border-radius: 12px;
+  color: var(--yellow);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  min-height: 52px;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.obtn:hover:not(:disabled) { 
+  border-color: var(--yellow); 
+  background: rgba(255,255,94,0.08); 
+}
+
+.obtn:disabled { 
+  cursor: default; 
+}
+
+/* Correct & wrong answer states */
+.obtn.correct { 
+  background: var(--ok); 
+  border-color: var(--ok); 
+  color: var(--bg); 
+}
+
+.obtn.wrong { 
+  background: var(--err); 
+  border-color: var(--err); 
+  color: #fff; 
+}
+
+/* ── DRAG CONFIRM (Place phase confirmation) ── */
+.drag-confirm {
+  padding: 1rem;
+  background: var(--yellow);
+  border: none;
+  border-radius: 12px;
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  min-height: 48px;
+  width: 100%;
+}
+
+.drag-confirm:disabled { 
+  opacity: 0.5; 
+  cursor: default; 
+}
+
+/* ── NEXT BUTTON (Phase transition) ── */
+#nxt {
+  display: none;
+  padding: 1rem;
+  background: var(--yellow);
+  border: none;
+  border-radius: 12px;
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  min-height: 48px;
+  transition: opacity 0.1s;
+}
+
+#nxt.show { 
+  display: block; 
+}
+
+#nxt:hover { 
+  opacity: 0.85; 
+}

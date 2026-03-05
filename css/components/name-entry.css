@@ -1,0 +1,104 @@
+/* ══════════════════════════════════════
+   NAME ENTRY UI (Arcade-style)
+══════════════════════════════════════ */
+
+.name-entry { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 0.85rem; 
+}
+
+.name-entry h3 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--yellow);
+  letter-spacing: 0.08em;
+}
+
+/* ── CHARACTER SLOTS ── */
+.name-chars { 
+  display: flex; 
+  gap: 0.45rem; 
+}
+
+.name-char {
+  width: 50px; 
+  height: 58px;
+  background: var(--bg);
+  border: 2.5px solid rgba(255,255,94,0.3);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--yellow);
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.name-char.active { 
+  border-color: var(--yellow); 
+  background: var(--bg2); 
+}
+
+/* ── ARROW CONTROLS (for cycling characters) ── */
+.char-arrows { 
+  display: flex; 
+  gap: 0.28rem; 
+}
+
+.carrow {
+  width: 40px; 
+  height: 40px;
+  border: 2px solid rgba(255,255,94,0.3);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--yellow);
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.carrow:hover, .carrow:active { 
+  border-color: var(--yellow); 
+}
+
+/* ── SUBMIT & SKIP BUTTONS ── */
+.submit-btn {
+  padding: 1rem 2.6rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--yellow);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  min-height: 48px;
+}
+
+.submit-btn:hover { 
+  opacity: 0.85; 
+}
+
+.skip-btn {
+  padding: 0.6rem 1.3rem;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  min-height: 38px;
+}

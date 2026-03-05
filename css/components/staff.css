@@ -1,0 +1,14 @@
+/* ══════════════════════════════════════
+   MUSICAL STAFF DISPLAY
+══════════════════════════════════════ */
+
+.staffw, .drag-staffw { 
+  width: 100%; 
+  overflow: hidden; 
+}
+
+.ssvg { 
+  width: 100%; 
+  height: auto; 
+  display: block; 
+}

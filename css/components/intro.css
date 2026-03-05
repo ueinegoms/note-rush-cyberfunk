@@ -1,0 +1,280 @@
+/* ══════════════════════════════════════
+   INTRO PAGE & SETTINGS
+══════════════════════════════════════ */
+
+#intro-page {
+  display: block;
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+.intro-main {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8vh 5vw;
+}
+
+/* ── LEADERBOARD (top, brutalist) ── */
+.lb-hero {
+  width: 100%;
+  max-width: 480px;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.lb-hero-title { 
+  display: none; 
+}
+
+.lb-table { 
+  width: 100%; 
+  border-collapse: collapse; 
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  padding: 0.55rem 1.2rem;
+  border-bottom: 1px solid rgba(255,255,94,0.12);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--yellow);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.lb-rank { 
+  color: var(--yellow); 
+}
+
+.lb-name { 
+  color: var(--yellow); 
+  padding-left: 0.6rem; 
+}
+
+.lb-score { 
+  color: var(--yellow); 
+}
+
+.lb-loading, .lb-empty {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  padding: 1rem 1.2rem;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.new-entry { 
+  background: rgba(255,255,94,0.07); 
+}
+
+/* ── HERO / LOGO SECTION ── */
+.intro-hero {
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+}
+
+.graffiti-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.logo-lockup {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 2.2rem 1.2rem 1.8rem;
+}
+
+.logo-lockup img {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+}
+
+/* ── SETTINGS PANEL (Below hero) ── */
+.settings-panel {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2rem 1.2rem 4rem;
+  background: var(--bg2);
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 50vh;
+}
+
+/* ── SLIDERS ── */
+.sr {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0 0 1.2rem;
+}
+
+.sr-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--yellow);
+  letter-spacing: 0.06em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sr-val { 
+  color: var(--yellow); 
+  font-weight: 700; 
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,94,0.25);
+  outline: none;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--yellow);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+input[type=range]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--yellow);
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+}
+
+/* ── TOGGLE ROWS (for phase selection) ── */
+.ptoggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.5rem;
+  background: var(--yellow);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ptoggle-row.off {
+  background: var(--bg);
+  border: 2px solid rgba(255,255,94,0.25);
+}
+
+.ptoggle-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--bg);
+  letter-spacing: 0.04em;
+}
+
+.ptoggle-row.off .ptoggle-label {
+  color: rgba(255,255,94,0.4);
+}
+
+/* ── TOGGLE SWITCH (checkbox styled) ── */
+.toggle-sw { 
+  display: flex; 
+  align-items: center; 
+  cursor: pointer; 
+}
+
+.toggle-sw input { 
+  display: none; 
+}
+
+.toggle-track {
+  width: 46px;
+  height: 28px;
+  background: var(--dark);
+  border: 2px solid var(--bg);
+  position: relative;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  border-radius: 14px;
+}
+
+.ptoggle-row .toggle-track {
+  background: var(--bg);
+  border-color: var(--bg);
+}
+
+.ptoggle-row.off .toggle-track {
+  background: var(--dark);
+  border-color: rgba(255,255,94,0.3);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--yellow);
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.ptoggle-row.off .toggle-thumb {
+  background: rgba(255,255,94,0.35);
+}
+
+.toggle-sw input:checked ~ .toggle-track .toggle-thumb {
+  transform: translateX(18px);
+}
+
+/* ── THEME BUTTON ── */
+.theme-btn {
+  display: block;
+  width: 100%;
+  padding: 1.1rem;
+  margin-top: 1rem;
+  background: var(--yellow);
+  border: none;
+  border-radius: 12px;
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+
+.theme-btn:hover { 
+  opacity: 0.85; 
+}

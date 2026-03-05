@@ -1,0 +1,37 @@
+/* ══════════════════════════════════════
+   BASE & GLOBAL STYLES
+══════════════════════════════════════ */
+
+*, *::before, *::after { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+}
+
+html, body {
+  height: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+:root {
+  /* NEW FIGMA COLORS */
+  --bg:     #22126A;
+  --bg2:    #1C3DF7;
+  --yellow: #FFFF5E;
+  
+  --dark:   #0A0820;
+  --ok:     #00FF88;
+  --err:    #FF2244;
+  --blue:   #4433FF;
+  --muted:  rgba(255,255,94,0.45); /* Adjusted for new yellow */
+}
+
+body {
+  background: var(--bg);
+  color: var(--yellow);
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}

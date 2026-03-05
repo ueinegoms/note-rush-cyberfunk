@@ -1,119 +1,27 @@
-/* ═══════════════════════════════════════════
-   TEMA: NOTE RUSH CYBERFUNK
-   Sage green, laranja queimado, teclado marmorizado
-════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Playwrite+PE&family=Dela+Gothic+One&display=swap');
+/* ══════════════════════════════════════════════
+   NOTE RUSH CYBERFUNK — NEW DEFAULT THEME
+   Palette: #0A0A06 · #1D0A6A · #FFFDEE
+   ══════════════════════════════════════════════ */
 
-:root {
-  --bg:#c5cca0; --panel:#d2d8ae; --card:#eceedc; --panel2:#e4e8c8;
-  --accent:#f07020; --accent2:#c85010;
-  --text:#252010; --muted:#6a6d50; --border:#b0b488;
-  --ok:#3a8a30; --err:#c82828; --gold:#b89018;
-  --cfg-bg:#1a1a10; --cfg-border:#c85010;
-  --sw:52px;
-  --font-display:'Playwrite PE',cursive;
-  --font-mono:'Dela Gothic One',sans-serif;
-  --font-body:'Dela Gothic One',sans-serif;
-  --radius:12px; --radius-sm:8px;
-  --card-top-bar:linear-gradient(90deg,var(--accent),var(--gold),var(--accent2));
-  --logo-shadow:2px 2px 0 rgba(0,0,0,.12);
-  --swirl-show:block;
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Boogaloo&family=Black+Ops+One&display=swap');
+
+/* ── OVERRIDE ROOT VARS ── */
+[data-theme="cyberfunk"] {
+  --bg:      #0A0A06;
+  --panel:   #1D0A6A;
+  --card:    #12095A;
+  --panel2:  #160878;
+  --orange:  #FFFD00;
+  --orange2: #E0DC00;
+  --text:    #FFFDEE;
+  --muted:   #8880CC;
+  --border:  #3020AA;
+  --ok:      #00FF88;
+  --err:     #FF2244;
+  --gold:    #FFFD00;
+  --sw:      0px; /* hide swirl, we have new header */
+
+  --font-display: 'Black Ops One', cursive;
+  --font-body:    'Space Mono', monospace;
+  --font-mono:    'Space Mono', monospace;
 }
-
-body { font-family: var(--font-body); }
-
-/* swirl sidebar */
-.swirl { display: var(--swirl-show); }
-
-/* header */
-.logo-title { font-family: var(--font-display); color: var(--accent); text-shadow: var(--logo-shadow); }
-.logo-sub   { font-family: var(--font-mono); color: var(--muted); letter-spacing:.16em; }
-.combo-num  { font-family: var(--font-display); color: var(--accent); }
-.best-num   { font-family: var(--font-display); color: var(--gold); }
-
-/* cfg */
-#cfg { background: var(--cfg-bg); border-bottom-color: var(--cfg-border); }
-.cfg-lbl { font-family: var(--font-mono); color: var(--accent); }
-.sr label { color: #9a9d80; }
-.sr input[type=range] { background: #3a3a28; }
-.sr input[type=range]::-webkit-slider-thumb { background: var(--accent); }
-.sv { font-family: var(--font-display); color: var(--accent); }
-.sr select { background: #252518; border-color: #444430; color: #c8cfa0; font-family: var(--font-mono); }
-.ptoggle span { font-family: var(--font-mono); color: #c8cfa0; }
-.ptoggle input { accent-color: var(--accent); }
-
-/* phase tabs */
-#ptabs { background: var(--panel); border-color: var(--border); }
-.ptab  { font-family: var(--font-display); color: var(--muted); }
-.ptab.done   { color: var(--ok); background: rgba(58,138,48,.1); }
-.ptab.active { background: var(--accent); color: #fff; }
-.ptab.skipped{ opacity:.5; text-decoration:line-through; }
-
-/* streak */
-#stk { background: var(--card); border-color: var(--border); }
-.slbl{ font-family: var(--font-mono); color: var(--muted); }
-.sdot{ border-color: var(--border); }
-.sdot.on { background: var(--accent); border-color: var(--accent); }
-.snum{ font-family: var(--font-display); color: var(--accent); }
-
-/* note progress */
-.np { font-family: var(--font-mono); border-color: var(--border); color: var(--muted); background: var(--panel); }
-.np.unlocked { border-color: var(--ok); color: var(--ok); }
-.np.current  { border-color: var(--accent); color: var(--accent); }
-
-/* card */
-.card { background: var(--card); border-color: var(--border); border-radius: var(--radius); }
-.card::before { background: var(--card-top-bar); }
-.ptag  { font-family: var(--font-mono); border-color: var(--accent); color: var(--accent); }
-.nname { font-family: var(--font-display); color: var(--accent); text-shadow: 3px 3px 0 rgba(0,0,0,.08); }
-
-/* staff */
-.staffw { background: #f2f4e4; border-color: var(--border); }
-.drag-staffw { background: #f2f4e4; border-color: var(--border); }
-
-/* buttons */
-.obtn { font-family: var(--font-display); border-color: var(--border); background: var(--panel2); color: var(--text); border-radius: var(--radius-sm); }
-.obtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.obtn.correct { border-color: var(--ok); color: var(--ok); }
-.obtn.wrong   { border-color: var(--err); color: var(--err); }
-#nxt { font-family: var(--font-display); border-color: var(--accent); color: var(--accent); border-radius: var(--radius-sm); }
-#nxt:hover,#nxt:active { background: var(--accent); color: #fff; }
-.playbtn { font-family: var(--font-display); border-color: var(--gold); color: var(--gold); border-radius: var(--radius-sm); }
-.playbtn:hover,.playbtn:active { background: var(--gold); color: #fff; }
-.playbtn-ref { border-color: var(--muted); color: var(--muted); }
-.playbtn-ref:hover,.playbtn-ref:active { background: var(--muted); color: #fff; }
-.drag-confirm { font-family: var(--font-display); border-color: var(--accent); background: var(--accent); color: #fff; box-shadow: 0 4px 0 var(--accent2); }
-.drag-hint { font-family: var(--font-mono); color: var(--muted); }
-.nbtn { font-family: var(--font-display); border-color: var(--border); }
-.nbtn.go { border-color: var(--accent); color: var(--accent); }
-.nbtn.go:hover,.nbtn.go:active { background: var(--accent); color: #fff; }
-
-/* game over */
-.combo-lost .big { font-family: var(--font-display); color: var(--err); }
-.combo-lost .score-show { font-family: var(--font-display); color: var(--accent); }
-
-/* leaderboard */
-.lb-title { font-family: var(--font-display); color: var(--gold); }
-.lb-row   { background: var(--panel); border-color: var(--border); }
-.lb-row.top1 { background: #fff8e0; border-color: var(--gold); }
-.lb-name  { font-family: var(--font-display); color: var(--accent); }
-.lb-score { font-family: var(--font-mono); }
-.lb-loading,.lb-empty { font-family: var(--font-mono); color: var(--muted); }
-
-/* name entry */
-.name-entry h3 { font-family: var(--font-display); }
-.name-char { font-family: var(--font-display); color: var(--accent); border-color: var(--border); }
-.name-char.active { border-color: var(--accent); }
-.submit-btn { font-family: var(--font-display); border-color: var(--accent); background: var(--accent); box-shadow: 0 4px 0 var(--accent2); }
-.skip-btn { font-family: var(--font-mono); border-color: var(--border); color: var(--muted); }
-
-/* intro */
-.bigclef { color: var(--accent); text-shadow: 4px 4px 0 rgba(0,0,0,.13),-1px -1px 0 var(--accent2); }
-.ititle  { font-family: var(--font-display); color: var(--accent); text-shadow: 4px 4px 0 rgba(0,0,0,.1); }
-.idesc   { color: var(--muted); }
-.pill    { background: var(--panel); border-color: var(--border); }
-.pn      { font-family: var(--font-display); color: var(--accent); }
-#sbtn    { font-family: var(--font-display); border-color: var(--accent); background: var(--accent); color: #fff; box-shadow: 0 5px 0 var(--accent2); }
-
-/* unlock banner */
-.unlock-banner { background: var(--ok); }

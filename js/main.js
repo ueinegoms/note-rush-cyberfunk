@@ -225,18 +225,15 @@ function hPlace(chosen) {
 // ── PHASE 4 — LISTEN ──
 function rListen() {
   if(!G.cur||G.ans){game.pickNew();game.buildSOpts();}
-  const note=G.cur, n=nd(note), prev=G.lastNote?nd(G.lastNote):null;
+  const note=G.cur, n=nd(note);
   const card=document.createElement('div'); card.className='card pop-in'; card.id='acard';
-  const prevBtn=prev?`<button class="playbtn playbtn-ref" id="prev-play">♩ ${prev.lB}</button>`:'';
   card.innerHTML=`<div class="ptag">Fase 4 — Ouça e identifique</div>
     <div class="play-row">
-      ${prevBtn}
       <button class="playbtn" id="listen-play">♩ Tocar nota</button>
     </div>
     <div class="opts">${G.sopts.map(nid=>`<button class="obtn" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
     <div id="fb"></div><button id="nxt" class="nxt-btn">Próxima →</button>`;
   ct.appendChild(card);
-  if(prev) document.getElementById('prev-play').addEventListener('click',()=>playNote(prev.f,1.2));
   document.getElementById('listen-play').addEventListener('click',()=>playNote(n.f,1.2));
   G.sopts.forEach(nid=>document.getElementById('ob-'+nid).addEventListener('click',()=>hId(nid)));
   document.getElementById('nxt').addEventListener('click',()=>{game.nextQ();render();});
@@ -246,18 +243,15 @@ function rListen() {
 // ── PHASE 5 — PIANO ──
 function rPlay() {
   if(!G.cur||G.ans) game.pickNew();
-  const note=G.cur, n=nd(note), active=game.ga(), prev=G.lastNote?nd(G.lastNote):null;
+  const note=G.cur, n=nd(note), active=game.ga();
   const card=document.createElement('div'); card.className='card pop-in'; card.id='acard';
-  const prevBtn=prev?`<button class="playbtn playbtn-ref" id="prev-play">♩ ${prev.lB}</button>`:'';
   card.innerHTML=`<div class="ptag">Fase 5 — Toque no teclado</div>
     <div class="play-row">
-      ${prevBtn}
       <button class="playbtn" id="play-play">♩ Tocar nota</button>
     </div>
     <div id="pia"></div>
     <div id="fb"></div><button id="nxt" class="nxt-btn">Próxima →</button>`;
   ct.appendChild(card);
-  if(prev) document.getElementById('prev-play').addEventListener('click',()=>playNote(prev.f,1.2));
   document.getElementById('play-play').addEventListener('click',()=>playNote(n.f,1.2));
   card.querySelector('#pia').appendChild(buildPiano(active,(cid,btn)=>hPiano(cid,btn)));
   document.getElementById('nxt').addEventListener('click',()=>{game.nextQ();render();});

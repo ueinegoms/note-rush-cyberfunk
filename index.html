@@ -30,95 +30,98 @@
 </head>
 <body>
 
-<div id="intro-page">
-
-  <div class="intro-main">
-    
-    <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-      <div class="lb-hero" id="lb-intro"></div>
-
-      <div class="intro-hero">
-        <div class="logo-lockup">
-          <h1 style="color: white; font-size: 3.5rem; text-align: center; margin-bottom: 20px;">NOTE RUSH</h1>
-        </div>
-      </div>
-    </div>
-
-    <button id="start-btn" class="jogar-btn">JOGAR</button>
-
-  </div><div class="settings-panel">
-
-    <div style="text-align: center; color: white; margin-bottom: 2rem; opacity: 0.5; font-size: 0.8rem;">
-      ▼ Configurações ▼
-    </div>
-
-    <div class="sr">
-      <div class="sr-label">
-        <span>acertos p/ avançar</span>
-        <span class="sr-val" id="sfp-v">5</span>
-      </div>
-      <input type="range" id="sfp" min="2" max="12" value="5"
-       >
-    </div>
-
-    <div class="sr">
-      <div class="sr-label">
-        <span>notas iniciais</span>
-        <span class="sr-val" id="sni-v">2</span>
-      </div>
-      <input type="range" id="sni" min="1" max="13" value="2"
-       >
-    </div>
-
-    <label class="ptoggle-row" id="row-ph1" data-phase="ph1">
-      <span class="ptoggle-label">ver/ouvir</span>
-      <label class="toggle-sw">
-        <input type="checkbox" id="ph1" checked>
-        <div class="toggle-track"><div class="toggle-thumb"></div></div>
-      </label>
-    </label>
-
-    <label class="ptoggle-row" id="row-ph2" data-phase="ph2">
-      <span class="ptoggle-label">nome</span>
-      <label class="toggle-sw">
-        <input type="checkbox" id="ph2" checked>
-        <div class="toggle-track"><div class="toggle-thumb"></div></div>
-      </label>
-    </label>
-
-    <label class="ptoggle-row" id="row-ph3" data-phase="ph3">
-      <span class="ptoggle-label">posição</span>
-      <label class="toggle-sw">
-        <input type="checkbox" id="ph3" checked>
-        <div class="toggle-track"><div class="toggle-thumb"></div></div>
-      </label>
-    </label>
-
-    <label class="ptoggle-row" id="row-ph4" data-phase="ph4">
-      <span class="ptoggle-label">ouvir</span>
-      <label class="toggle-sw">
-        <input type="checkbox" id="ph4" checked>
-        <div class="toggle-track"><div class="toggle-thumb"></div></div>
-      </label>
-    </label>
-
-    <label class="ptoggle-row" id="row-ph5" data-phase="ph5">
-      <span class="ptoggle-label">tocar</span>
-      <label class="toggle-sw">
-        <input type="checkbox" id="ph5" checked>
-        <div class="toggle-track"><div class="toggle-thumb"></div></div>
-      </label>
-    </label>
-    
-    <select id="nr" style="display:none;"><option value="extended" selected></option></select>
-
-  </div></div><header id="game-header">
+<header id="game-header">
   <div class="header-logo">
     <div class="header-logo-text">NOTE RUSH</div>
   </div>
   <div class="header-score-num" id="combo-disp">x0</div>
 </header>
 
+<!-- HOME SCREEN -->
+<div id="intro-main">
+
+  <div class="panel" id="lb-intro"></div>
+
+  <div class="logo-lockup">
+    <h1 style="color: white; font-size: 3.5rem; text-align: center; margin-bottom: 20px;">NOTE RUSH</h1>
+  </div>
+
+  <button id="start-btn" class="btn">JOGAR</button>
+
+</div>
+
+<!-- GAME SCREEN (shown while playing) -->
 <div id="game-page">
-  <div id="ct"></div>  <script type="module" src="js/main.js"></script></body>
+  <div id="ct"></div>
+</div>
+
+<!-- CONFIG PANEL — always accessible by scrolling -->
+<div class="panel" id="config-panel">
+
+  <div style="text-align: center; color: white; opacity: 0.5; font-size: 0.8rem;">
+    ▼ Configurações ▼
+  </div>
+
+  <div class="sr">
+    <div class="sr-label">
+      <span>acertos p/ avançar</span>
+      <span class="sr-val" id="sfp-v">5</span>
+    </div>
+    <input type="range" id="sfp" min="2" max="12" value="5">
+  </div>
+
+  <div class="sr">
+    <div class="sr-label">
+      <span>notas iniciais</span>
+      <span class="sr-val" id="sni-v">2</span>
+    </div>
+    <input type="range" id="sni" min="1" max="13" value="2">
+  </div>
+
+  <label class="btn ptoggle-row" id="row-ph1" data-phase="ph1">
+    <span class="ptoggle-label">ver/ouvir</span>
+    <label class="toggle-sw">
+      <input type="checkbox" id="ph1" checked>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </label>
+  </label>
+
+  <label class="btn ptoggle-row" id="row-ph2" data-phase="ph2">
+    <span class="ptoggle-label">nome</span>
+    <label class="toggle-sw">
+      <input type="checkbox" id="ph2" checked>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </label>
+  </label>
+
+  <label class="btn ptoggle-row" id="row-ph3" data-phase="ph3">
+    <span class="ptoggle-label">posição</span>
+    <label class="toggle-sw">
+      <input type="checkbox" id="ph3" checked>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </label>
+  </label>
+
+  <label class="btn ptoggle-row" id="row-ph4" data-phase="ph4">
+    <span class="ptoggle-label">ouvir</span>
+    <label class="toggle-sw">
+      <input type="checkbox" id="ph4" checked>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </label>
+  </label>
+
+  <label class="btn ptoggle-row" id="row-ph5" data-phase="ph5">
+    <span class="ptoggle-label">tocar</span>
+    <label class="toggle-sw">
+      <input type="checkbox" id="ph5" checked>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </label>
+  </label>
+
+  <select id="nr" style="display:none;"><option value="extended" selected></option></select>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
 </html>

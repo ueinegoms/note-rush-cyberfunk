@@ -1,18 +1,9 @@
 /* ══════════════════════════════════════
-   CARD & CONTENT CONTAINERS
+   CARD CONTENT — layout within .panel
+   (container itself is .panel from base.css)
 ══════════════════════════════════════ */
 
-.card {
-  background: var(--bg2);
-  border-radius: 24px;
-  padding: 2rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-
-/* ── PTAG (Phase tag/label) ── */
+/* phase label */
 .ptag {
   font-size: 0.75rem;
   font-weight: 800;
@@ -22,9 +13,8 @@
   text-align: center;
 }
 
-/* ── NNAME (Note name display) ── */
+/* note name big display */
 .nname {
-  font-family: 'JetBrains Mono', monospace;
   font-size: clamp(3rem, 15vw, 4rem);
   font-weight: 800;
   color: var(--yellow);
@@ -33,7 +23,7 @@
   text-align: center;
 }
 
-/* ── LINFO (Learn info text) ── */
+/* small info text */
 .linfo {
   font-size: 0.7rem;
   color: #fff;
@@ -41,14 +31,7 @@
   text-align: center;
 }
 
-/* ── LNAV (Learn navigation) ── */
-.lnav { 
-  display: flex; 
-  gap: 0.5rem; 
-  justify-content: space-between; 
-}
-
-/* ── DRAG HINT (Place phase hint text) ── */
+/* drag phase hint */
 .drag-hint {
   font-size: 0.7rem;
   color: #fff;

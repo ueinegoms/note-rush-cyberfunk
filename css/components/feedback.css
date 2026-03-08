@@ -3,7 +3,6 @@
 ══════════════════════════════════════ */
 
 #fb {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -11,19 +10,12 @@
   text-align: center;
 }
 
-.ok  { 
-  color: var(--ok); 
-}
+.ok  { color: var(--ok); }
+.err { color: var(--err); }
 
-.err { 
-  color: var(--err); 
-}
-
-/* ── UNLOCK BANNER (New note unlocked) ── */
+/* ── UNLOCK BANNER ── */
 .unlock-banner {
   background: rgba(255,255,94,0.1);
-  border: 1.5px solid rgba(255,255,94,0.4);
-  border-radius: 8px;
   padding: 0.8rem;
   font-size: 0.8rem;
   color: var(--yellow);
@@ -41,7 +33,7 @@
   color: #fff;
 }
 
-/* ── COMBO LOST (Game over screen) ── */
+/* ── COMBO LOST ── */
 .combo-lost {
   display: flex;
   flex-direction: column;
@@ -51,7 +43,6 @@
 }
 
 .combo-lost .big {
-  font-family: 'JetBrains Mono', monospace;
   font-size: clamp(1.4rem, 6vw, 2rem);
   font-weight: 800;
   color: var(--err);
@@ -59,9 +50,9 @@
 }
 
 .combo-lost .score-show {
-  font-family: 'JetBrains Mono', monospace;
   font-size: clamp(2rem, 8vw, 3rem);
   font-weight: 800;
   color: var(--yellow);
   line-height: 1;
 }
+

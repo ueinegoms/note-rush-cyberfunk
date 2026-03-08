@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════
    PIANO KEYBOARD STYLING
+   (reference + answer keyboards share same .pianow)
 ══════════════════════════════════════ */
 
 .pianow {
@@ -7,17 +8,30 @@
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg2) var(--bg);
+  /* flip container so scrollbar appears on top */
+  transform: scaleY(-1);
 }
 
-.pianow::-webkit-scrollbar { 
-  display: none; 
+.pianow::-webkit-scrollbar {
+  height: 6px;
+}
+
+.pianow::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.pianow::-webkit-scrollbar-thumb {
+  background: var(--bg2);
 }
 
 .piano {
   position: relative;
   display: flex;
   flex-shrink: 0;
+  /* counter-flip so keys appear right-side up */
+  transform: scaleY(-1);
 }
 
 /* ── WHITE KEYS ── */
@@ -25,8 +39,6 @@
   position: absolute;
   height: 112px;
   background: rgba(255,253,238,0.9);
-  border: 1.5px solid #0A0820;
-  border-radius: 0 0 8px 8px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -38,33 +50,13 @@
   touch-action: manipulation;
 }
 
-.wkey.inactive { 
-  background: rgba(100,80,200,0.2); 
-  cursor: default; 
-}
-
-.wkey.dis { 
-  cursor: default; 
-  pointer-events: none; 
-}
-
-/* Correct answer highlight */
-.wkey.ck { 
-  background: rgba(255,255,94,0.55); 
-}
-
-/* Wrong answer highlight */
-.wkey.wk { 
-  background: rgba(255,34,68,0.55); 
-}
-
-/* Pressed state */
-.wkey.pressed { 
-  background: rgba(255,255,94,0.35); 
-}
+.wkey.inactive { background: rgba(100,80,200,0.2); cursor: default; }
+.wkey.dis      { cursor: default; pointer-events: none; }
+.wkey.ck       { background: rgba(255,255,94,0.55); }
+.wkey.wk       { background: rgba(255,34,68,0.55); }
+.wkey.pressed  { background: rgba(255,255,94,0.35); }
 
 .wlbl {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 800;
   color: var(--bg);
@@ -80,24 +72,16 @@
   width: 22px;
   height: 68px;
   background: #0A0820;
-  border: 1px solid #000;
-  border-radius: 0 0 4px 4px;
   z-index: 2;
   cursor: pointer;
   transition: background 0.08s;
   touch-action: manipulation;
 }
 
-.bkey.dis { 
-  cursor: default; 
-  pointer-events: none; 
-}
+.bkey.dis     { cursor: default; pointer-events: none; }
+.bkey.pressed { background: #2a1a6a; }
 
-.bkey.pressed { 
-  background: #2a1a6a; 
-}
-
-/* ── REFERENCE PIANO (shows unlocked notes) ── */
+/* ── REFERENCE PIANO wrapper ── */
 .ref-piano-outer {
   width: 100%;
   display: flex;
@@ -113,3 +97,8 @@
   text-transform: uppercase;
   color: #fff;
 }
+
+/* ref piano key colour states */
+/* ref-active: same as normal white key — no special color */
+.wkey.ref-upcoming { background: rgba(100,80,200,0.2); cursor: default; }
+.wkey.ref-inactive { background: #0d0830; cursor: default; }

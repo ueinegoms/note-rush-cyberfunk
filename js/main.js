@@ -27,14 +27,16 @@ export function updateRowStyle(cbId, rowId) {
 //  PAGE TRANSITIONS
 // ══════════════════════════════════════════════
 function showGamePage() {
-  document.getElementById('intro-page').style.display = 'none';
+  document.getElementById('intro-main').style.display = 'none';
   document.getElementById('game-header').classList.add('show');
   document.getElementById('game-page').classList.add('show');
+  window.scrollTo(0, 0);
 }
 function showIntroPage() {
-  document.getElementById('intro-page').style.display = 'block';
+  document.getElementById('intro-main').style.display = '';
   document.getElementById('game-header').classList.remove('show');
   document.getElementById('game-page').classList.remove('show');
+  window.scrollTo(0, 0);
   lb.renderLeaderboard(document.getElementById('lb-intro'));
 }
 
@@ -45,8 +47,8 @@ function confetti() {
   const cols=['#FFFF5E','#00FF88','#1C3DF7','#fff','#FF2244'];
   for(let i=0; i<18; i++){
     const el=document.createElement('div'); el.className='cp';
-    el.style.cssText=`left:${20+Math.random()*60}vw;top:${10+Math.random()*30}vh;background:${cols[i%cols.length]};animation-delay:${Math.random()*.25}s;animation-duration:${.55+Math.random()*.45}s;transform:rotate(${Math.random()*360}deg)`;
-    document.body.appendChild(el); setTimeout(()=>el.remove(),1000);
+    el.style.cssText=`left:${20+Math.random()*60}vw;top:${10+Math.random()*30}vh;background:${cols[i%cols.length]};animation-delay:${Math.random()*.25}s;animation-duration:${1.2+Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el); setTimeout(()=>el.remove(),1800);
   }
 }
 
@@ -56,7 +58,7 @@ function advancePhaseWithRender(oldPhase) {
   game.goNextPhase(oldPhase);
   // If pendingUnlock is true, we called advanceNote which has a 1-second delay
   if (G.pendingUnlock && !hadPending) {
-    setTimeout(() => render(), 1100);
+    setTimeout(() => render(), 900);
   } else {
     // Normal phase advance, render immediately
     render();
@@ -105,20 +107,20 @@ function render() {
 // ── PHASE 1 — LEARN ──
 function rLearn() {
   const notes = game.ga(), note = notes[Math.min(G.li,notes.length-1)], n = nd(note);
-  const card = document.createElement('div'); card.className='card pop-in';
+  const card = document.createElement('div'); card.className='panel pop-in';
   const uBanner = G.pendingUnlock?`<div class="unlock-banner">🔓 Nova nota: ${n.lB}!<span>Veja onde ela fica antes de continuar</span></div>`:'';
   const noteCount = notes.length>1?`<div class="linfo">${G.li+1} / ${notes.length} notas</div>`:'';
   card.innerHTML=`<div class="ptag">Fase 1 — Memorize</div>
     ${uBanner}
     <div class="nname">${n.lB}</div>
     <div class="staffw">${buildStaff({showNote:note})}</div>
-    <button class="playbtn" id="learn-play">♩ Ouvir nota</button>
+    <button class="btn" id="learn-play">♩ Ouvir nota</button>
     ${noteCount}
     <div class="lnav">
-      ${G.li>0?`<button class="nbtn" id="lprev">← Ant</button>`:'<span></span>'}
+      ${G.li>0?`<button class="btn btn-ghost" id="lprev">← Ant</button>`:'<span></span>'}
       ${G.li<notes.length-1
-        ?`<button class="nbtn" id="lnext">Próx →</button>`
-        :`<button class="nbtn go" id="go-next">Praticar →</button>`}
+        ?`<button class="btn btn-ghost" id="lnext">Próx →</button>`
+        :`<button class="btn" id="go-next">Praticar →</button>`}
     </div>`;
   ct.appendChild(card);
   document.getElementById('learn-play').addEventListener('click',()=>playNote(n.f));
@@ -131,23 +133,22 @@ function rLearn() {
 function rIdentify() {
   if (!G.cur||G.ans) game.pickNew();
   const note = G.cur, dist = game.getDistractors([note],2), ch = shuf([note,...dist]);
-  const card = document.createElement('div'); card.className='card pop-in'; card.id='acard';
+  const card = document.createElement('div'); card.className='panel pop-in'; card.id='acard';
   card.innerHTML=`<div class="ptag">Fase 2 — Qual é esta nota?</div>
     <div class="staffw" id="sd">${buildStaff({showNote:note})}</div>
-    <div class="opts">${ch.map(nid=>`<button class="obtn" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
-    <div id="fb"></div><button id="nxt" class="nxt-btn">Próxima →</button>`;
+    <div class="opts">${ch.map(nid=>`<button class="btn-option" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
+    <div id="fb"></div>`;
   ct.appendChild(card);
   ch.forEach(nid=>{
     document.getElementById('ob-'+nid).addEventListener('click',()=>hId(nid));
   });
-  document.getElementById('nxt').addEventListener('click',()=>{game.nextQ();render();});
 }
 
 // ── PHASE 3 — PLACE ──
 function rPlace() {
   if (!G.cur||G.ans) game.pickNew();
   const note=G.cur, n=nd(note);
-  const card=document.createElement('div'); card.className='card pop-in'; card.id='acard';
+  const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
   const isTouchDevice='ontouchstart' in window||navigator.maxTouchPoints>0;
   const hint=isTouchDevice?'Arraste ↕ pra posicionar, confirme':'Clique na posição correta na pauta';
   card.innerHTML=`<div class="ptag">Fase 3 — Posicione a nota</div>
@@ -155,13 +156,11 @@ function rPlace() {
     <div class="drag-hint" id="drag-hint">${hint}</div>
     <div class="drag-staffw" id="drag-staff"></div>
     <div id="fb"></div>
-    <button class="drag-confirm" id="drag-confirm" style="display:none">✓ Confirmar posição</button>
-    <button id="nxt" class="nxt-btn">Próxima →</button>`;
+    <button class="btn" id="drag-confirm" style="display:none">✓ Confirmar posição</button>`;
   ct.appendChild(card);
   initDragStaff(note);
   const confirmBtn = document.getElementById('drag-confirm');
   if (confirmBtn) confirmBtn.addEventListener('click', hPlaceDrag);
-  document.getElementById('nxt').addEventListener('click',()=>{game.nextQ();render();});
 }
 
 let _dragSp = null;
@@ -197,8 +196,8 @@ function hPlaceDrag() {
   if(_dragSp===corSp){staffEl.innerHTML=buildStaffDrag(_dragSp,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk();
     jOk(); confetti(); updateComboDisplay();
     const {sfp}=game.S();
-    if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),1000);return; }
-    const nb=document.getElementById('nxt');if(nb)nb.classList.add('show');
+    if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),800);return; }
+    setTimeout(()=>{game.nextQ();render();},700);
   }
   else{staffEl.innerHTML=buildStaffDrag(_dragSp,cor);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
     jErr(); updateComboDisplay();
@@ -212,8 +211,8 @@ function hPlace(chosen) {
   if(chosen===cor){staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk();
     jOk(); confetti(); updateComboDisplay();
     const {sfp}=game.S();
-    if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),1000);return; }
-    const nb=document.getElementById('nxt');if(nb)nb.classList.add('show');
+    if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),800);return; }
+    setTimeout(()=>{game.nextQ();render();},700);
   }
   else{staffEl.innerHTML=buildStaffDrag(nd(chosen).s+5,cor,null);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
     jErr(); updateComboDisplay();
@@ -226,17 +225,16 @@ function hPlace(chosen) {
 function rListen() {
   if(!G.cur||G.ans){game.pickNew();game.buildSOpts();}
   const note=G.cur, n=nd(note);
-  const card=document.createElement('div'); card.className='card pop-in'; card.id='acard';
+  const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
   card.innerHTML=`<div class="ptag">Fase 4 — Ouça e identifique</div>
     <div class="play-row">
-      <button class="playbtn" id="listen-play">♩ Tocar nota</button>
+      <button class="btn" id="listen-play">♩ Tocar nota</button>
     </div>
-    <div class="opts">${G.sopts.map(nid=>`<button class="obtn" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
-    <div id="fb"></div><button id="nxt" class="nxt-btn">Próxima →</button>`;
+    <div class="opts">${G.sopts.map(nid=>`<button class="btn-option" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
+    <div id="fb"></div>`;
   ct.appendChild(card);
   document.getElementById('listen-play').addEventListener('click',()=>playNote(n.f,1.2));
   G.sopts.forEach(nid=>document.getElementById('ob-'+nid).addEventListener('click',()=>hId(nid)));
-  document.getElementById('nxt').addEventListener('click',()=>{game.nextQ();render();});
   setTimeout(()=>playNote(n.f,1.2),300);
 }
 
@@ -244,17 +242,16 @@ function rListen() {
 function rPlay() {
   if(!G.cur||G.ans) game.pickNew();
   const note=G.cur, n=nd(note), active=game.ga();
-  const card=document.createElement('div'); card.className='card pop-in'; card.id='acard';
+  const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
   card.innerHTML=`<div class="ptag">Fase 5 — Toque no teclado</div>
     <div class="play-row">
-      <button class="playbtn" id="play-play">♩ Tocar nota</button>
+      <button class="btn" id="play-play">♩ Tocar nota</button>
     </div>
     <div id="pia"></div>
-    <div id="fb"></div><button id="nxt" class="nxt-btn">Próxima →</button>`;
+    <div id="fb"></div>`;
   ct.appendChild(card);
   document.getElementById('play-play').addEventListener('click',()=>playNote(n.f,1.2));
   card.querySelector('#pia').appendChild(buildPiano(active,(cid,btn)=>hPiano(cid,btn)));
-  document.getElementById('nxt').addEventListener('click',()=>{game.nextQ();render();});
   setTimeout(()=>playNote(n.f,1.2),300);
 }
 
@@ -262,13 +259,13 @@ function rPlay() {
 function renderGameOver() {
   const final=G._lastCombo||0;
   ct.innerHTML='';
-  const card=document.createElement('div'); card.className='card pop-in'; card.id='acard';
+  const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
   const lost=document.createElement('div'); lost.className='combo-lost';
   lost.innerHTML=`<div class="big">COMBO PERDIDO!</div>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:.8rem;color:rgba(255,255,94,0.45);letter-spacing:.12em;">SEU COMBO</div>
+    <div style="font-size:.8rem;color:rgba(255,255,94,0.45);letter-spacing:.12em;">SEU COMBO</div>
     <div class="score-show">x${final}</div>`;
   card.appendChild(lost);
-  const lbWrap=document.createElement('div'); lbWrap.className='lb-hero'; lbWrap.style.cssText='width:100%;max-width:100%;margin-top:.5rem;';
+  const lbWrap=document.createElement('div'); lbWrap.style.cssText='width:100%;margin-top:.5rem;';
   card.appendChild(lbWrap);
   ct.appendChild(card);
 
@@ -283,7 +280,7 @@ function renderGameOver() {
   });
 
   const br=document.createElement('div'); br.style.cssText='display:flex;gap:.6rem;margin-top:.5rem;width:100%;';
-  const ag=document.createElement('button'); ag.className='jogar-btn'; ag.style.cssText='font-size: 1.5rem; padding: 15px; margin: 0;'; ag.textContent='↺ JOGAR DE NOVO';
+  const ag=document.createElement('button'); ag.className='btn btn-replay'; ag.textContent='↺ JOGAR DE NOVO';
   ag.addEventListener('click', startGame);
   br.appendChild(ag); card.appendChild(br);
 }
@@ -294,14 +291,14 @@ function renderGameOver() {
 function hId(chosen) {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur;
-  document.querySelectorAll('.obtn').forEach(b=>b.disabled=true);
+  document.querySelectorAll('.btn-option').forEach(b=>b.disabled=true);
   document.getElementById('ob-'+cor)?.classList.add('correct');
   const fb=document.getElementById('fb');
   if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';if(G.phase!==4)playNote(nd(cor).f,.8);onOk();
       jOk(); confetti(); updateComboDisplay();
       const {sfp}=game.S();
-      if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),1000);return; }
-      const nb=document.getElementById('nxt'); if(nb)nb.classList.add('show');
+      if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),800);return; }
+      setTimeout(()=>{game.nextQ();render();},700);
     }
     else{document.getElementById('ob-'+chosen)?.classList.add('wrong');fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
       jErr(); updateComboDisplay();
@@ -318,8 +315,8 @@ function hPiano(chosen,btn) {
   if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';onOk();
       jOk(); confetti(); updateComboDisplay();
       const {sfp}=game.S();
-      if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),1000);return; }
-      const nb=document.getElementById('nxt'); if(nb)nb.classList.add('show');
+      if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),800);return; }
+      setTimeout(()=>{game.nextQ();render();},700);
     }
     else{btn.classList.add('wk');fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
       jErr(); updateComboDisplay();

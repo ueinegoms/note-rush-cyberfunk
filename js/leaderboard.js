@@ -64,8 +64,6 @@ export async function renderLeaderboard(container, hlName = null, hlScore = null
   let rows;
   try { rows = await getLeaderboard(); } catch { rows = []; }
   container.innerHTML = '';
-  const t = document.createElement('div'); t.className = 'lb-title'; t.textContent = '🏆 TOP 5';
-  container.appendChild(t);
   if (!rows || rows.length === 0) {
     const e = document.createElement('div'); e.className = 'lb-empty'; e.textContent = 'NENHUMA PONTUAÇÃO AINDA';
     container.appendChild(e);
@@ -138,9 +136,9 @@ export function buildNameEntry(combo,onSubmit,onSkip){
   left.addEventListener('click',()=>{activeIdx=(activeIdx-1+NAME_LEN)%NAME_LEN;updateDisplay();});
   right.addEventListener('click',()=>{activeIdx=(activeIdx+1)%NAME_LEN;updateDisplay();});
 
-  const sb=document.createElement('button');sb.className='submit-btn';sb.textContent='✓ ENVIAR';
+  const sb=document.createElement('button');sb.className='btn submit-btn';sb.textContent='✓ ENVIAR';
   sb.addEventListener('click',()=>{const val=chars.join('').trim()||'???';onSubmit(val);});
-  const sk=document.createElement('button');sk.className='skip-btn';sk.textContent='pular';sk.addEventListener('click',onSkip);
+  const sk=document.createElement('button');sk.className='btn btn-ghost skip-btn';sk.textContent='pular';sk.addEventListener('click',onSkip);
   wrap.appendChild(sb);wrap.appendChild(sk);
 
   const keyHandler=e=>{

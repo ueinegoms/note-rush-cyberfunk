@@ -75,13 +75,14 @@ export function buildPiano(activeNotes, onKey, disAll = false) {
 
 // reference-piano builder used by `ui.appendRefPiano`
 export function buildRefPiano(active, allScale) {
-  const CHROM = CHROMATIC; // assume exposed globally or imported
+  const CHROM = CHROMATIC;
   const scaleChrom = CHROM.filter(k=>k.id&&allScale.includes(k.id));
   if (!scaleChrom.length) return document.createElement('div');
   const minOct=Math.min(...scaleChrom.map(k=>k.oct)), maxOct=Math.max(...scaleChrom.map(k=>k.oct));
   const range=CHROM.filter(k=>k.oct>=minOct&&k.oct<=maxOct);
   const whites=range.filter(k=>!k.isB);
-  const GAP=2, WW=32, WH=90, BW=Math.round(WW*.62), BH=Math.round(WH*.6);
+  const isNarrow = window.innerWidth <= 480;
+  const GAP=2, WW=isNarrow?30:42, WH=isNarrow?88:112;
   const totalW=whites.length*(WW+GAP);
   const wrap=document.createElement('div'); wrap.className='pianow';
   const piano=document.createElement('div'); piano.className='piano';
@@ -92,23 +93,45 @@ export function buildRefPiano(active, allScale) {
     const inScale=k.id&&allScale.includes(k.id);
     const x=wi*(WW+GAP);
     const btn=document.createElement('div');
-    btn.className='wkey'+(!inScale?' inactive':'')+(isActive?' ck':'');
-    const bgDef = isActive?'rgba(255,255,94,.55)':inScale?'rgba(28,61,247,.35)':'#0d0830';
-    btn.style.cssText=`left:${x}px;width:${WW}px;height:${WH}px;background:${bgDef};`;
-    if(isActive&&k.id){ const n=nd(k.id); const lbEl=document.createElement('div'); lbEl.style.cssText=`font-family:'JetBrains Mono',monospace;font-size:9px;color:#22126A;text-align:center;line-height:1.1;pointer-events:none;white-space:pre;`; lbEl.textContent=n.lb.replace(/(₃|₄|₅)/,'\n$1'); btn.appendChild(lbEl); }
-    if(k.id){ const n=nd(k.id); if(n){ const press=()=>{playNote(n.f,.55); btn.style.background=isActive?'#FFFF5E':'rgba(28,61,247,.6)'; btn.classList.add('pressed');}; const rel=()=>{btn.style.background=bgDef; btn.classList.remove('pressed');}; btn.addEventListener('mousedown',press); btn.addEventListener('mouseup',rel); btn.addEventListener('mouseleave',rel); btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false}); btn.addEventListener('touchend',e=>{e.preventDefault();rel();},{passive:false}); } }
+    // ref-upcoming = in scale but locked; ref-inactive = outside scale entirely
+    const colorClass = isActive ? '' : inScale ? 'ref-upcoming' : 'ref-inactive';
+    btn.className='wkey'+( colorClass?' '+colorClass:'')+(isActive?'':!inScale?' inactive':'');
+    btn.style.cssText=`left:${x}px;width:${WW}px;`;
+    if(isActive&&k.id){
+      const n=nd(k.id);
+      const lbEl=document.createElement('div');
+      lbEl.className='wlbl';
+      lbEl.textContent=n.lb.replace(/(₃|₄|₅)/,'\n$1');
+      btn.appendChild(lbEl);
+    }
+    if(k.id){
+      const n=nd(k.id);
+      if(n){
+        const press=()=>{ playNote(n.f,.55); btn.classList.add('pressed'); };
+        const rel=()=>{ btn.classList.remove('pressed'); };
+        btn.addEventListener('mousedown',press);
+        btn.addEventListener('mouseup',rel);
+        btn.addEventListener('mouseleave',rel);
+        btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
+        btn.addEventListener('touchend',e=>{e.preventDefault();rel();},{passive:false});
+      }
+    }
     piano.appendChild(btn);
   });
+
   range.filter(k=>k.isB).forEach(k=>{
     const lwi=whites.findIndex(w=>w.oct===k.oct&&w.pc===k.pc-1); if(lwi<0)return;
     const bx=lwi*(WW+GAP)+WW*.63;
     const btn=document.createElement('div'); btn.className='bkey';
-    btn.style.cssText=`left:${bx}px;top:0;width:${BW}px;height:${BH}px;background:#0A0820;`;
-    const press=()=>{playNote(k.f,.55); btn.style.background='#22126A'; btn.classList.add('pressed');}; const rel=()=>{btn.style.background='#0A0820'; btn.classList.remove('pressed');};
+    btn.style.cssText=`left:${bx}px;top:0;`;
+    const press=()=>{ playNote(k.f,.55); btn.classList.add('pressed'); };
+    const rel=()=>{ btn.classList.remove('pressed'); };
     btn.addEventListener('mousedown',press); btn.addEventListener('mouseup',rel); btn.addEventListener('mouseleave',rel);
-    btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false}); btn.addEventListener('touchend',e=>{e.preventDefault();rel();},{passive:false});
+    btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
+    btn.addEventListener('touchend',e=>{e.preventDefault();rel();},{passive:false});
     piano.appendChild(btn);
   });
+
   wrap.appendChild(piano);
 
   const activeWhiteIdx=whites.map((w,i)=>w.id&&active.includes(w.id)?i:-1).filter(i=>i>=0);

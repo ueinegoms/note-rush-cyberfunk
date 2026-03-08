@@ -15,16 +15,13 @@ html, body {
 }
 
 :root {
-  /* NEW FIGMA COLORS */
   --bg:     #22126A;
   --bg2:    #1C3DF7;
   --yellow: #FFFF5E;
-  
   --dark:   #0A0820;
   --ok:     #00FF88;
   --err:    #FF2244;
-  --blue:   #4433FF;
-  --muted:  rgba(255,255,94,0.45); /* Adjusted for new yellow */
+  --muted:  rgba(255,255,94,0.45);
 }
 
 body {
@@ -35,3 +32,83 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* ══════════════════════════════════════
+   SHARED CONTAINER
+══════════════════════════════════════ */
+
+.panel {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2rem 1.2rem;
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ══════════════════════════════════════
+   SHARED BUTTON BASE
+══════════════════════════════════════ */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1.2rem;
+  background: var(--yellow);
+  color: var(--bg);
+  border: none;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+  user-select: none;
+}
+
+.btn.off {
+  background: var(--bg);
+  color: rgba(255,255,94,0.4);
+}
+
+/* ghost variant — dark bg, yellow text */
+.btn-ghost {
+  background: var(--bg);
+  color: var(--yellow);
+  border: none;
+}
+
+.btn-ghost:hover, .btn-ghost:active {
+  background: var(--yellow);
+  color: var(--bg);
+}
+
+/* option variant — stage 2/4 note choices: dark bg, yellow text */
+.btn-option {
+  background: var(--bg);
+  color: var(--yellow);
+  border: none;
+  flex: 1;
+  min-width: 100px;
+  min-height: 52px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.btn-option:disabled { cursor: default; }
+
+.btn-option.correct { background: var(--ok); color: var(--bg); }
+.btn-option.wrong   { background: var(--err); color: #fff; }

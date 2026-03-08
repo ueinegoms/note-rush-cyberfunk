@@ -101,6 +101,7 @@ export function advanceNote() {
       G.phase = firstActivePhase();
       G.cur = null;
       G.ans = false;
+      G.pendingUnlock = false;
     }, 1000);
   } else {
     G.streak = 0;

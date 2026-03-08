@@ -23,15 +23,15 @@ export async function sbFetch(path, opts = {}) {
   return res.json();
 }
 
-function sevenDaysAgo() {
-  return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+function threeDaysAgo() {
+  return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 }
 
 export async function getLeaderboard() {
   if (!SB_ENABLED) return getLocalLB();
   try {
     return await sbFetch(
-      `${SUPABASE_TABLE}?select=name,score&created_at=gte.${sevenDaysAgo()}&order=score.desc&limit=5`
+      `${SUPABASE_TABLE}?select=name,score&created_at=gte.${threeDaysAgo()}&order=score.desc&limit=5`
     );
   }
   catch { return getLocalLB(); }
@@ -49,7 +49,7 @@ export async function submitScore(name, score) {
 
 export function getLocalLB() {
   try {
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
     const all = JSON.parse(localStorage.getItem('nr_lb') || '[]');
     return all
       .filter(r => !r.created_at || new Date(r.created_at).getTime() >= cutoff)
@@ -60,10 +60,10 @@ export function getLocalLB() {
 
 export function saveLocalLB(name, score) {
   try {
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
     const all = JSON.parse(localStorage.getItem('nr_lb') || '[]');
     all.push({ name, score, created_at: new Date().toISOString() });
-    // keep only last-7-days entries, capped at 5 by score
+    // keep only last-3-days entries, capped at 5 by score
     const pruned = all
       .filter(r => !r.created_at || new Date(r.created_at).getTime() >= cutoff)
       .sort((a, b) => b.score - a.score)

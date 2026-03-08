@@ -21,7 +21,12 @@ export function nextActivePhase(current) {
 export function firstActivePhase() { return getActivePhases()[0]; }
 
 // note sets depending on unlock state
-export function gn() { return NS['extended']; }
+const NR_NAMES = ['basic','extended','full'];
+export function gn() {
+  const el = document.getElementById('snr');
+  const idx = el ? Math.max(0, Math.min(2, (+el.value) - 1)) : 1;
+  return NS[NR_NAMES[idx]];
+}
 export function ga() { return gn().slice(0, Math.min(G.unlocked, gn().length)); }
 
 export function getDistractors(exclude, count) {

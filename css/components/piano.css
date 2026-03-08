@@ -4,41 +4,22 @@
 ══════════════════════════════════════ */
 
 .pianow {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg2) var(--bg);
-  /* flip container so scrollbar appears on top */
-  transform: scaleY(-1);
-}
-
-.pianow::-webkit-scrollbar {
-  height: 6px;
-}
-
-.pianow::-webkit-scrollbar-track {
-  background: var(--bg);
-}
-
-.pianow::-webkit-scrollbar-thumb {
-  background: var(--bg2);
+  overflow: visible;
+  display: flex;
+  justify-content: center;
 }
 
 .piano {
   position: relative;
   display: flex;
   flex-shrink: 0;
-  /* counter-flip so keys appear right-side up */
-  transform: scaleY(-1);
 }
 
 /* ── WHITE KEYS ── */
 .wkey {
   position: absolute;
   height: 112px;
-  background: rgba(255,253,238,0.9);
+  background: #ffffff;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -50,7 +31,7 @@
   touch-action: manipulation;
 }
 
-.wkey.inactive { background: rgba(100,80,200,0.2); cursor: default; }
+.wkey.inactive { background: rgba(255,255,255,0.8); cursor: default; }
 .wkey.dis      { cursor: default; pointer-events: none; }
 .wkey.ck       { background: rgba(255,255,94,0.55); }
 .wkey.wk       { background: rgba(255,34,68,0.55); }
@@ -59,7 +40,7 @@
 .wlbl {
   font-size: 10px;
   font-weight: 800;
-  color: var(--bg);
+  color: var(--plus1);
   text-align: center;
   line-height: 1.1;
   pointer-events: none;
@@ -81,24 +62,29 @@
 .bkey.dis     { cursor: default; pointer-events: none; }
 .bkey.pressed { background: #2a1a6a; }
 
-/* ── REFERENCE PIANO wrapper ── */
+/* ── REFERENCE PIANO wrapper — full screen width ── */
 .ref-piano-outer {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;   /* left-aligned so overflow-x scroll can reach both edges */
   gap: 0.5rem;
-  margin-top: 1rem;
+  padding: 0.75rem 0;
+  background: var(--bg2);
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .ref-piano-lbl {
   font-size: 0.6rem;
   letter-spacing: 0.14em;
-  text-transform: uppercase;
+  text-transform: lowercase;
   color: #fff;
+  width: 100%;           /* span full container width so text-align: center works */
+  align-self: stretch;
+  text-align: center;
 }
 
 /* ref piano key colour states */
-/* ref-active: same as normal white key — no special color */
-.wkey.ref-upcoming { background: rgba(100,80,200,0.2); cursor: default; }
-.wkey.ref-inactive { background: #0d0830; cursor: default; }
+.wkey.ref-upcoming { background: rgba(255,255,255,0.8); cursor: default; }
+.wkey.ref-inactive { background: rgba(255,255,255,0.8); cursor: default; }

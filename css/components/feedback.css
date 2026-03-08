@@ -18,7 +18,7 @@
   background: rgba(255,255,94,0.1);
   padding: 0.8rem;
   font-size: 0.8rem;
-  color: var(--yellow);
+  color: var(--plus2);
   font-weight: 700;
   letter-spacing: 0.06em;
   display: flex;
@@ -52,7 +52,7 @@
 .combo-lost .score-show {
   font-size: clamp(2rem, 8vw, 3rem);
   font-weight: 800;
-  color: var(--yellow);
+  color: var(--plus2);
   line-height: 1;
 }
 

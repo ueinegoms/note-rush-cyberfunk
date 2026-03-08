@@ -46,31 +46,40 @@ export function playNote(freq, dur = 0.9, delay = 0) {
   TIMBRES[Math.floor(Math.random() * TIMBRES.length)].build(c, freq, t);
 }
 
-export function jOk() {
+const ST = Math.pow(2, 1/12); // one semitone ratio
+
+// Win sound: 50/50 major chord (0,4,7) or dominant 7th (0,4,7,10), arpeggiated
+export function jOkChord(rootFreq) {
   const c = ctx2(), t = c.currentTime;
-  [523, 659, 784].forEach((f, i) => {
+  const semis = Math.random() < 0.5 ? [0, 4, 7] : [0, 4, 7, 10];
+  semis.forEach((semi, i) => {
+    const f = rootFreq * Math.pow(ST, semi);
+    const delay = i * 0.075;
     const o = c.createOscillator(), g = c.createGain();
     o.type = 'triangle';
     o.frequency.value = f;
-    o.connect(g);
-    g.connect(c.destination);
-    g.gain.setValueAtTime(0, t + i * .1);
-    g.gain.linearRampToValueAtTime(0.18, t + i * .1 + .015);
-    g.gain.exponentialRampToValueAtTime(0.001, t + i * .1 + .22);
-    o.start(t + i * .1);
-    o.stop(t + i * .1 + .25);
+    o.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(0, t + delay);
+    g.gain.linearRampToValueAtTime(0.2, t + delay + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.65);
+    o.start(t + delay);
+    o.stop(t + delay + 0.7);
   });
 }
 
-export function jErr() {
-  const c = ctx2(), o = c.createOscillator(), g = c.createGain();
-  o.connect(g);
-  g.connect(c.destination);
-  o.type = 'sawtooth';
-  o.frequency.setValueAtTime(200, c.currentTime);
-  o.frequency.exponentialRampToValueAtTime(80, c.currentTime + .32);
-  g.gain.setValueAtTime(0.16, c.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + .32);
-  o.start();
-  o.stop(c.currentTime + .36);
+// Minor chord (root + min3 + P5), simultaneous — lose sound
+export function jErrChord(rootFreq) {
+  const c = ctx2(), t = c.currentTime;
+  [0, 3, 7].forEach((semi, i) => {
+    const f = rootFreq * Math.pow(ST, semi);
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sawtooth';
+    o.frequency.value = f;
+    o.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(i === 0 ? 0.1 : 0.055, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
+    o.start(t);
+    o.stop(t + 0.45);
+  });
 }

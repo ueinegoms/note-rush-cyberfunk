@@ -23,36 +23,53 @@ export async function sbFetch(path, opts = {}) {
   return res.json();
 }
 
+function sevenDaysAgo() {
+  return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+}
+
 export async function getLeaderboard() {
   if (!SB_ENABLED) return getLocalLB();
-  try { return await sbFetch(`${SUPABASE_TABLE}?select=name,score&order=score.desc&limit=5`); }
+  try {
+    return await sbFetch(
+      `${SUPABASE_TABLE}?select=name,score&created_at=gte.${sevenDaysAgo()}&order=score.desc&limit=5`
+    );
+  }
   catch { return getLocalLB(); }
 }
 
 export async function submitScore(name, score) {
   if (!SB_ENABLED) { saveLocalLB(name, score); return; }
   try {
+    // Just insert — entries age out of the leaderboard naturally after 7 days.
     await sbFetch(SUPABASE_TABLE, { method: 'POST', body: JSON.stringify({ name, score }) });
-    const all = await sbFetch(`${SUPABASE_TABLE}?select=id,score&order=score.desc`);
-    if (all.length > 5)
-      for (const r of all.slice(5))
-        await sbFetch(`${SUPABASE_TABLE}?id=eq.${r.id}`, { method: 'DELETE' });
   } catch {
     saveLocalLB(name, score);
   }
 }
 
 export function getLocalLB() {
-  try { return JSON.parse(localStorage.getItem('nr_lb') || '[]'); }
-  catch { return []; }
+  try {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const all = JSON.parse(localStorage.getItem('nr_lb') || '[]');
+    return all
+      .filter(r => !r.created_at || new Date(r.created_at).getTime() >= cutoff)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  } catch { return []; }
 }
 
 export function saveLocalLB(name, score) {
-  let lb = getLocalLB();
-  lb.push({ name, score });
-  lb.sort((a, b) => b.score - a.score);
-  lb = lb.slice(0, 5);
-  localStorage.setItem('nr_lb', JSON.stringify(lb));
+  try {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const all = JSON.parse(localStorage.getItem('nr_lb') || '[]');
+    all.push({ name, score, created_at: new Date().toISOString() });
+    // keep only last-7-days entries, capped at 5 by score
+    const pruned = all
+      .filter(r => !r.created_at || new Date(r.created_at).getTime() >= cutoff)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+    localStorage.setItem('nr_lb', JSON.stringify(pruned));
+  } catch {}
 }
 
 // ══════════════════════════════════════════════
@@ -74,7 +91,7 @@ export async function renderLeaderboard(container, hlName = null, hlScore = null
     const isNew=hlName&&row.name===hlName&&row.score===hlScore;
     div.className='lb-row'+(i===0?' top1':'')+(isNew?' new-entry':'');
     const nameEl=document.createElement('span');nameEl.className='lb-name';nameEl.textContent=row.name;
-    div.innerHTML=`<span class="lb-rank${i===0?' r1':''}">${['🥇','🥈','🥉','4','5'][i]}</span>`;
+    div.innerHTML=`<span class="lb-rank">${i+1}</span>`;
     div.appendChild(nameEl);
     const sc=document.createElement('span');sc.className='lb-score';sc.textContent='x'+row.score;
     div.appendChild(sc);

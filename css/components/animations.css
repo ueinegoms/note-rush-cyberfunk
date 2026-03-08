@@ -26,17 +26,4 @@
   animation: wshk .32s ease; 
 }
 
-/* ── CONFETTI PARTICLE ── */
-.cp {
-  position: fixed;
-  width: 10px; 
-  height: 12px;
-  pointer-events: none;
-  z-index: 9999;
-  animation: cpf .85s ease-in forwards;
-}
 
-@keyframes cpf {
-  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(300px) rotate(720deg); opacity: 0; }
-}

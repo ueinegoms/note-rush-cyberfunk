@@ -58,18 +58,6 @@ export function buildPiano(activeNotes, onKey, disAll = false) {
     piano.appendChild(btn);
   });
   wrap.appendChild(piano);
-
-  // center on active notes if any
-  const activeWhiteIdx = whites.map((w,i)=>w.id&&activeNotes.includes(w.id)?i:-1).filter(i=>i>=0);
-  if (activeWhiteIdx.length) {
-    const first = activeWhiteIdx[0], last = activeWhiteIdx[activeWhiteIdx.length-1];
-    const centerX = ((first+last+1)/2)*(WW+GAP);
-    requestAnimationFrame(()=>{
-      const visible=wrap.clientWidth||wrap.offsetWidth||0;
-      const maxScroll=Math.max(0,piano.scrollWidth-visible);
-      wrap.scrollLeft=Math.min(Math.max(centerX-visible/2,0),maxScroll);
-    });
-  }
   return wrap;
 }
 
@@ -133,13 +121,6 @@ export function buildRefPiano(active, allScale) {
   });
 
   wrap.appendChild(piano);
-
-  const activeWhiteIdx=whites.map((w,i)=>w.id&&active.includes(w.id)?i:-1).filter(i=>i>=0);
-  if(activeWhiteIdx.length){
-    const first=activeWhiteIdx[0], last=activeWhiteIdx[activeWhiteIdx.length-1];
-    const centerX=((first+last+1)/2)*(WW+GAP);
-    requestAnimationFrame(()=>{ const visible=wrap.clientWidth||0; const maxScroll=Math.max(0,piano.scrollWidth-visible); wrap.scrollLeft=Math.min(Math.max(centerX-visible/2,0),maxScroll); });
-  }
   return wrap;
 }
 

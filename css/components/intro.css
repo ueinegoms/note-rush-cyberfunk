@@ -12,40 +12,40 @@
   min-height: 100vh;
   padding: 4vh 1.2rem;
   gap: 1.5rem;
+  background-image: url('../../assets/note.svg');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-/* leaderboard panel on home — override .panel padding/gap to nothing for rows */
+/* leaderboard panel on home — shrinks to widest row */
 #lb-intro {
-  gap: 0;
-  padding: 0;
+  width: fit-content;
+  max-width: none;
+  gap: 13px;
+  padding: 13px;
+  align-items: flex-start;
 }
 
-.logo-lockup {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 480px;
-  padding: 1rem 1.2rem;
-}
+
+
 
 /* ── LEADERBOARD ROWS ── */
 .lb-row {
-  display: grid;
-  grid-template-columns: 2rem 1fr auto;
-  padding: 0.55rem 1.2rem;
-  border-bottom: 1px solid rgba(255,255,94,0.12);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 26px;
+  width: 100%;
   font-size: 1.35rem;
   font-weight: 700;
-  color: var(--yellow);
   letter-spacing: 0.04em;
   line-height: 1;
 }
 
-.lb-rank  { color: var(--yellow); }
-.lb-name  { color: var(--yellow); padding-left: 0.6rem; }
-.lb-score { color: var(--yellow); }
+.lb-rank  { color: var(--plus2); }
+.lb-name  { color: #fff; }
+.lb-score { color: var(--plus2); }
 
 .lb-loading, .lb-empty {
   font-size: 0.7rem;
@@ -74,13 +74,13 @@
 .sr-label {
   font-size: 0.72rem;
   font-weight: 400;
-  color: var(--yellow);
+  color: var(--plus2);
   letter-spacing: 0.06em;
   display: flex;
   justify-content: space-between;
 }
 
-.sr-val { color: var(--yellow); font-weight: 700; }
+.sr-val { color: var(--plus2); font-weight: 700; }
 
 input[type=range] {
   -webkit-appearance: none;
@@ -95,14 +95,14 @@ input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 20px;
   height: 20px;
-  background: var(--yellow);
+  background: var(--plus2);
   cursor: pointer;
 }
 
 input[type=range]::-moz-range-thumb {
   width: 20px;
   height: 20px;
-  background: var(--yellow);
+  background: var(--plus2);
   cursor: pointer;
   border: none;
 }
@@ -112,19 +112,26 @@ input[type=range]::-moz-range-thumb {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 0.9rem;
+  padding: 17px 13px;
+  gap: 13px;
   cursor: pointer;
 }
 
 .ptoggle-label {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--bg);
+  color: var(--bg2);
   letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+/* OFF: container bg becomes --plus1, text stays same */
+.ptoggle-row.off {
+  background: var(--plus1);
 }
 
 .ptoggle-row.off .ptoggle-label {
-  color: rgba(255,255,94,0.4);
+  color: var(--bg2);
 }
 
 /* ── TOGGLE SWITCH ── */
@@ -133,27 +140,29 @@ input[type=range]::-moz-range-thumb {
 
 .toggle-track {
   width: 46px;
-  height: 28px;
-  background: var(--bg);
+  height: 34px;  /* 7 + 20 + 7 */
+  background: var(--plus1);
   position: relative;
   transition: background 0.15s;
   flex-shrink: 0;
 }
 
-.ptoggle-row.off .toggle-track { background: var(--dark); }
+.ptoggle-row.off .toggle-track { background: var(--plus1); }
 
 .toggle-thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 7px;
+  left: 7px;
   width: 20px;
   height: 20px;
-  background: var(--yellow);
+  background: var(--plus2);
   transition: transform 0.15s;
 }
 
-.ptoggle-row.off .toggle-thumb { background: rgba(255,255,94,0.35); }
+/* OFF knob → body bg color */
+.ptoggle-row.off .toggle-thumb { background: #1B0093; }
 
+/* ON = knob 7px from right: (46 - 20 - 7) - 7 = 12px translate */
 .toggle-sw input:checked ~ .toggle-track .toggle-thumb {
-  transform: translateX(18px);
+  transform: translateX(12px);
 }

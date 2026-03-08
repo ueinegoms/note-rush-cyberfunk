@@ -12,7 +12,7 @@
 .name-entry h3 {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--yellow);
+  color: var(--plus2);
   letter-spacing: 0.08em;
 }
 
@@ -22,10 +22,10 @@
 .name-char {
   width: 50px; 
   height: 58px;
-  background: var(--bg);
+  background: var(--plus1);
   font-size: 1.8rem;
   font-weight: 800;
-  color: var(--yellow);
+  color: var(--plus2);
   text-align: center;
   cursor: pointer;
   display: flex;
@@ -33,7 +33,7 @@
   justify-content: center;
 }
 
-.name-char.active { color: var(--yellow); background: var(--bg2); }
+.name-char.active { color: var(--plus2); background: var(--bg2); }
 
 /* ── ARROW CONTROLS ── */
 .char-arrows { display: flex; gap: 0.28rem; }
@@ -41,8 +41,8 @@
 .carrow {
   width: 40px; 
   height: 40px;
-  background: var(--bg);
-  color: var(--yellow);
+  background: var(--plus1);
+  color: var(--plus2);
   font-size: 0.95rem;
   cursor: pointer;
   display: flex;

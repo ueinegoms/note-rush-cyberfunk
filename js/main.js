@@ -12,6 +12,65 @@ import {buildPiano, buildRefPiano} from './piano.js';
 const sessionIntroduced = new Set();
 
 // ══════════════════════════════════════════════
+//  SHARED KEYBOARD SCROLL MANAGER
+//  Both .pianow elements (ref + answer) share one scrollLeft value so they
+//  stay perfectly aligned on the X axis.  No native scrollbar is shown;
+//  dragging anywhere on the piano background moves both.
+// ══════════════════════════════════════════════
+let _kbScrollX = 0;
+const _kbWrappers = [];
+let _kbDragEl = null, _kbDragStartX = 0, _kbDragStartScroll = 0;
+
+function resetKbScroll() {
+  _kbWrappers.length = 0;
+  _kbScrollX = 0;
+}
+
+function syncKbScroll(left) {
+  const max = _kbWrappers.reduce((m, el) => Math.max(m, el.scrollWidth - el.clientWidth), 0);
+  _kbScrollX = Math.max(0, Math.min(left, max));
+  _kbWrappers.forEach(el => { el.scrollLeft = _kbScrollX; });
+}
+
+function registerKbWrapper(el) {
+  _kbWrappers.push(el);
+  // Apply current shared position immediately so new wrapper aligns with existing ones.
+  // If this is the first wrapper registered for this render cycle, center it.
+  if (_kbWrappers.length === 1) {
+    requestAnimationFrame(() => syncKbScroll((el.scrollWidth - el.clientWidth) / 2));
+  } else {
+    el.scrollLeft = _kbScrollX;
+  }
+
+  // Touch drag — only fires when swiping the background (not a key).
+  let _t0 = null, _ts = 0;
+  el.addEventListener('touchstart', e => {
+    if (e.target.closest('.wkey,.bkey')) return;
+    _t0 = e.touches[0].clientX; _ts = _kbScrollX;
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if (_t0 === null) return;
+    e.preventDefault();
+    syncKbScroll(_ts + (_t0 - e.touches[0].clientX));
+  }, { passive: false });
+  el.addEventListener('touchend', () => { _t0 = null; }, { passive: true });
+  el.addEventListener('touchcancel', () => { _t0 = null; }, { passive: true });
+
+  // Mouse drag (desktop).
+  el.addEventListener('mousedown', e => {
+    if (e.target.closest('.wkey,.bkey')) return;
+    _kbDragEl = el; _kbDragStartX = e.clientX; _kbDragStartScroll = _kbScrollX;
+    e.preventDefault();
+  });
+}
+// Global mouse handlers — registered once so fast drags don’t lose tracking.
+window.addEventListener('mousemove', e => {
+  if (!_kbDragEl) return;
+  syncKbScroll(_kbDragStartScroll + (_kbDragStartX - e.clientX));
+});
+window.addEventListener('mouseup', () => { _kbDragEl = null; });
+
+// ══════════════════════════════════════════════
 //  TOGGLE ROW HELPERS
 // ══════════════════════════════════════════════
 export function togglePhase(cbId, rowId) {
@@ -153,21 +212,16 @@ function appendRefPiano() {
   lbl.textContent = 'teclado de referência (use o seu instrumento de base, se puder)';
   outer.appendChild(lbl);
 
-  const chrom = buildRefPiano(active, allScale);
-  outer.appendChild(chrom);
-  document.getElementById('game-page').appendChild(outer);
-
-  // If the keyboard overflows the container, start scrolled to centre so both
-  // sides are reachable.
-  requestAnimationFrame(() => {
-    const overflow = outer.scrollWidth - outer.clientWidth;
-    if (overflow > 0) outer.scrollLeft = overflow / 2;
-  });
+  const pianoWrap = buildRefPiano(active, allScale);
+  outer.appendChild(pianoWrap);
+  ct.appendChild(outer);
+  registerKbWrapper(pianoWrap);
 }
 
 function render() {
   ct.innerHTML = '';
-  document.getElementById('game-page').querySelectorAll('.ref-piano-outer').forEach(el => el.remove());
+  document.querySelectorAll('.ref-piano-outer').forEach(el => el.remove());
+  resetKbScroll();
   unlockAnswer();
   updateComboDisplay();
   if (G.phase === 0) { showIntroPage(); return; }
@@ -190,7 +244,9 @@ function rLearn() {
 
   const li = Math.min(G.li, newNotes.length - 1);
   const note = newNotes[li], n = nd(note);
-  sessionIntroduced.add(note); // mark as introduced the moment it appears
+  // Do NOT add to sessionIntroduced on render — we mark notes only when the
+  // user finishes the batch (clicks "Praticar →"), so prev/next navigation
+  // doesn't corrupt the list.
 
   const card = document.createElement('div'); card.className='panel pop-in';
   const uBanner = G.pendingUnlock?`<div class="unlock-banner">🔓 Nova nota: ${n.lB}!<span>Veja onde ela fica antes de continuar</span></div>`:'';
@@ -211,14 +267,20 @@ function rLearn() {
   document.getElementById('learn-play').addEventListener('click',()=>playNote(n.f));
   if (li>0) document.getElementById('lprev').addEventListener('click',()=>{G.li=Math.max(0,li-1); render();});
   if (li<newNotes.length-1) document.getElementById('lnext').addEventListener('click',()=>{G.li=Math.min(newNotes.length-1,li+1); render();});
-  if (li>=newNotes.length-1) document.getElementById('go-next').addEventListener('click',()=>{game.goNextPhase(1); render();});
+  if (li>=newNotes.length-1) document.getElementById('go-next').addEventListener('click',()=>{
+    // Mark every note the user was shown in this batch as introduced before advancing.
+    newNotes.forEach(id => sessionIntroduced.add(id));
+    G.li = 0;
+    game.goNextPhase(1); render();
+  });
 }
 
 // ── PHASE 2 — IDENTIFY ──
 function rIdentify() {
   if (!G.cur||G.ans) game.pickNew();
   stampQuestion();
-  const note = G.cur, dist = game.getDistractors([note],2), ch = shuf([note,...dist]);
+  const distractorCount = Math.min(2, game.ga().length - 1);
+  const note = G.cur, dist = game.getDistractors([note], distractorCount), ch = shuf([note,...dist]);
   const card = document.createElement('div'); card.className='panel pop-in'; card.id='acard';
   card.innerHTML=`<div class="ptag">Fase 2 — Qual é esta nota?</div>
     <div class="staffw" id="sd">${buildStaff({showNote:note})}</div>
@@ -340,16 +402,12 @@ function rPlay() {
     <div id="fb"></div>`;
   ct.appendChild(card);
   document.getElementById('play-play').addEventListener('click',()=>playNote(n.f,1.2));
-  card.querySelector('#pia').appendChild(buildPiano(active,(cid,btn)=>hPiano(cid,btn)));
+  // Pass game.gn() as rangeNotes so the answer piano spans the exact same
+  // octave range as the reference piano — required for X-axis sync.
+  const answerWrap = buildPiano(active,(cid,btn)=>hPiano(cid,btn),false,game.gn());
+  card.querySelector('#pia').appendChild(answerWrap);
+  registerKbWrapper(answerWrap);
   setTimeout(()=>playNote(n.f,1.2),300);
-
-  // On mobile, the answer keyboard may be wider than the viewport (the page
-  // scrolls horizontally).  Scroll to the horizontal centre so the user lands
-  // on the middle of the keyboard — but only when there is actual overflow.
-  requestAnimationFrame(() => {
-    const overflow = document.documentElement.scrollWidth - window.innerWidth;
-    if (overflow > 0) window.scrollTo({ left: overflow / 2, behavior: 'smooth' });
-  });
 }
 
 // ── GAME OVER ──

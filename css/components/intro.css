@@ -69,6 +69,8 @@
   flex-direction: column;
   gap: 0.3rem;
   padding-bottom: 0.6rem;
+  width: 100%;          /* stretch inside panel's align-items:center */
+  align-self: stretch;
 }
 
 .sr-label {
@@ -141,13 +143,13 @@ input[type=range]::-moz-range-thumb {
 .toggle-track {
   width: 46px;
   height: 34px;  /* 7 + 20 + 7 */
-  background: var(--plus1);
+  background: var(--bg2);    /* ON: blue track */
   position: relative;
   transition: background 0.15s;
   flex-shrink: 0;
 }
 
-.ptoggle-row.off .toggle-track { background: var(--plus1); }
+.ptoggle-row.off .toggle-track { background: var(--plus1); }  /* OFF: dark purple track */
 
 .toggle-thumb {
   position: absolute;
@@ -155,12 +157,12 @@ input[type=range]::-moz-range-thumb {
   left: 7px;
   width: 20px;
   height: 20px;
-  background: var(--plus2);
+  background: var(--plus2);  /* ON: yellow knob */
   transition: transform 0.15s;
 }
 
-/* OFF knob → body bg color */
-.ptoggle-row.off .toggle-thumb { background: #1B0093; }
+/* OFF knob → dark blue so it reads against the plus1 track */
+.ptoggle-row.off .toggle-thumb { background: var(--bg2); }
 
 /* ON = knob 7px from right: (46 - 20 - 7) - 7 = 12px translate */
 .toggle-sw input:checked ~ .toggle-track .toggle-thumb {

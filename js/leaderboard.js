@@ -111,13 +111,40 @@ export function buildNameEntry(combo,onSubmit,onSkip){
   const chars=new Array(NAME_LEN).fill('A');
   let activeIdx=0;
 
+  // Hidden real input — off-screen so it doesn’t affect layout but is fully
+  // focusable. position:fixed + off-screen avoids iOS scroll-into-view jumps.
+  const hiddenInput=document.createElement('input');
+  hiddenInput.type='text';
+  hiddenInput.inputMode='text';
+  hiddenInput.maxLength=1;
+  hiddenInput.autocomplete='off';
+  hiddenInput.setAttribute('autocorrect','off');
+  hiddenInput.setAttribute('autocapitalize','characters');
+  hiddenInput.setAttribute('spellcheck','false');
+  hiddenInput.style.cssText='position:fixed;top:-999px;left:-999px;width:1px;height:1px;opacity:0;';
+  wrap.appendChild(hiddenInput);
+
+  // Tap hint — tells mobile users to tap the chars to open the keyboard.
+  const tapHint=document.createElement('div');
+  tapHint.className='name-tap-hint';
+  tapHint.textContent='toque numa letra para digitar';
+  wrap.appendChild(tapHint);
+
   const charsRow=document.createElement('div');charsRow.className='name-chars';
   const cells=[];
   for(let i=0;i<NAME_LEN;i++){
     const c=document.createElement('div');
     c.className='name-char'+(i===activeIdx?' active':'');
     c.textContent=chars[i];
-    c.addEventListener('click',()=>{activeIdx=i;updateDisplay();});
+    // touchend fires synchronously within the gesture — iOS opens the keyboard.
+    c.addEventListener('touchend',e=>{
+      e.preventDefault(); activeIdx=i; updateDisplay(); hiddenInput.focus();
+      tapHint.style.display='none';
+    });
+    c.addEventListener('click',()=>{
+      activeIdx=i; updateDisplay(); hiddenInput.focus();
+      tapHint.style.display='none';
+    });
     cells.push(c);charsRow.appendChild(c);
   }
   wrap.appendChild(charsRow);
@@ -157,6 +184,23 @@ export function buildNameEntry(combo,onSubmit,onSkip){
   sb.addEventListener('click',()=>{const val=chars.join('').trim()||'???';onSubmit(val);});
   const sk=document.createElement('button');sk.className='btn btn-ghost skip-btn';sk.textContent='pular';sk.addEventListener('click',onSkip);
   wrap.appendChild(sb);wrap.appendChild(sk);
+
+  // Mobile keyboard: input event on hiddenInput fills slots.
+  hiddenInput.addEventListener('input',()=>{
+    const ch=hiddenInput.value.toUpperCase().replace(/[^A-Z0-9!?]/g,'');
+    hiddenInput.value='';
+    if(!ch)return;
+    const letter=ch[0];
+    if(NAME_ALPHABET.includes(letter)){
+      chars[activeIdx]=letter;
+      if(activeIdx<NAME_LEN-1)activeIdx++;
+      updateDisplay();
+    }
+  });
+  hiddenInput.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'){e.preventDefault();chars[activeIdx]='A';if(activeIdx>0)activeIdx--;updateDisplay();}
+    else if(e.key==='Enter'){e.preventDefault();sb.click();}
+  });
 
   const keyHandler=e=>{
     if(!wrap.isConnected){window.removeEventListener('keydown',keyHandler);return;}

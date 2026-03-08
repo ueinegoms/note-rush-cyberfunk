@@ -13,6 +13,8 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
   overflow-x: auto;
+  /* Prevents pinch-zoom on iOS Safari (user-scalable=no is ignored since iOS 10) */
+  touch-action: pan-x pan-y;
 }
 
 :root {

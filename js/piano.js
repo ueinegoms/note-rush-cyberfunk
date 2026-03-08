@@ -4,11 +4,16 @@ import {playNote} from './audio.js';
 // Build a piano keyboard element. `activeNotes` is an array of note ids
 // that should be highlighted/interactive. `onKey(id,element)` is callback for
 // when the user presses a key. if `disAll` is true all keys are disabled.
-export function buildPiano(activeNotes, onKey, disAll = false) {
+// `rangeNotes` optionally overrides the octave range (pass allScale so the
+// answer piano spans the same keys as the reference piano — required for sync).
+export function buildPiano(activeNotes, onKey, disAll = false, rangeNotes = null) {
   const activeChrom = CHROMATIC.filter(k => k.id && activeNotes.includes(k.id));
   if (!activeChrom.length) return document.createElement('div');
-  const minOct = Math.min(...activeChrom.map(k => k.oct));
-  const maxOct = Math.max(...activeChrom.map(k => k.oct));
+  const rangeChrom = rangeNotes
+    ? CHROMATIC.filter(k => k.id && rangeNotes.includes(k.id))
+    : activeChrom;
+  const minOct = Math.min(...rangeChrom.map(k => k.oct));
+  const maxOct = Math.max(...rangeChrom.map(k => k.oct));
   const range = CHROMATIC.filter(k => k.oct >= minOct && k.oct <= maxOct);
   const whites = range.filter(k => !k.isB);
   const isNarrow = window.innerWidth <= 480;

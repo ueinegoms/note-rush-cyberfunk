@@ -38,7 +38,8 @@ export function getDistractors(exclude, count) {
 }
 
 export function buildSOpts() {
-  const dist = getDistractors([G.cur], 2);
+  const count = Math.min(2, ga().length - 1);
+  const dist = getDistractors([G.cur], count);
   G.sopts = shuf([G.cur, ...dist]);
 }
 

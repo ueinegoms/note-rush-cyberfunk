@@ -4,10 +4,17 @@
 ══════════════════════════════════════ */
 
 .pianow {
-  overflow: visible;
+  /* Overflow is hidden — scrollLeft is controlled by the shared JS scroll manager.
+     This removes native scrollbars while keeping programmatic scrolling. */
+  overflow: hidden;
+  width: 100%;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  touch-action: none;   /* JS handles all touch gestures */
+  cursor: grab;
+  user-select: none;
 }
+.pianow:active { cursor: grabbing; }
 
 .piano {
   position: relative;
@@ -62,17 +69,16 @@
 .bkey.dis     { cursor: default; pointer-events: none; }
 .bkey.pressed { background: #2a1a6a; }
 
-/* ── REFERENCE PIANO wrapper — full screen width ── */
+/* ── REFERENCE PIANO wrapper — sits below stage content ── */
 .ref-piano-outer {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;   /* left-aligned so overflow-x scroll can reach both edges */
-  gap: 0.5rem;
+  align-items: center;
+  gap: 26px;
   padding: 0.75rem 0;
   background: var(--bg2);
-  overflow-x: auto;
-  overflow-y: visible;
+  overflow: visible;   /* .pianow handles its own clipping */
 }
 
 .ref-piano-lbl {

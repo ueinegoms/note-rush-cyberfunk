@@ -124,12 +124,6 @@ export function buildNameEntry(combo,onSubmit,onSkip){
   hiddenInput.style.cssText='position:fixed;top:-999px;left:-999px;width:1px;height:1px;opacity:0;';
   wrap.appendChild(hiddenInput);
 
-  // Tap hint — tells mobile users to tap the chars to open the keyboard.
-  const tapHint=document.createElement('div');
-  tapHint.className='name-tap-hint';
-  tapHint.textContent='toque numa letra para digitar';
-  wrap.appendChild(tapHint);
-
   const charsRow=document.createElement('div');charsRow.className='name-chars';
   const cells=[];
   for(let i=0;i<NAME_LEN;i++){
@@ -139,11 +133,9 @@ export function buildNameEntry(combo,onSubmit,onSkip){
     // touchend fires synchronously within the gesture — iOS opens the keyboard.
     c.addEventListener('touchend',e=>{
       e.preventDefault(); activeIdx=i; updateDisplay(); hiddenInput.focus();
-      tapHint.style.display='none';
     });
     c.addEventListener('click',()=>{
       activeIdx=i; updateDisplay(); hiddenInput.focus();
-      tapHint.style.display='none';
     });
     cells.push(c);charsRow.appendChild(c);
   }
@@ -186,6 +178,9 @@ export function buildNameEntry(combo,onSubmit,onSkip){
   wrap.appendChild(sb);wrap.appendChild(sk);
 
   // Mobile keyboard: input event on hiddenInput fills slots.
+  // This is the ONLY place letter characters are handled — do NOT also handle
+  // them in the window keydown listener, or both fire for the same key press
+  // and the last slot wraps back to 0.
   hiddenInput.addEventListener('input',()=>{
     const ch=hiddenInput.value.toUpperCase().replace(/[^A-Z0-9!?]/g,'');
     hiddenInput.value='';
@@ -202,24 +197,20 @@ export function buildNameEntry(combo,onSubmit,onSkip){
     else if(e.key==='Enter'){e.preventDefault();sb.click();}
   });
 
+  // window handler covers arrow navigation and Enter only — no letter keys.
   const keyHandler=e=>{
     if(!wrap.isConnected){window.removeEventListener('keydown',keyHandler);return;}
     if(e.key==='ArrowUp'){e.preventDefault();stepChar(1);}
     else if(e.key==='ArrowDown'){e.preventDefault();stepChar(-1);}
     else if(e.key==='ArrowLeft'){e.preventDefault();activeIdx=(activeIdx-1+NAME_LEN)%NAME_LEN;updateDisplay();}
     else if(e.key==='ArrowRight'){e.preventDefault();activeIdx=(activeIdx+1)%NAME_LEN;updateDisplay();}
-    else if(/^[a-z0-9!?]$/i.test(e.key)){
-      const ch=e.key.toUpperCase();
-      if(NAME_ALPHABET.includes(ch)){
-        chars[activeIdx]=ch;
-        activeIdx=(activeIdx+1)%NAME_LEN;
-        updateDisplay();
-      }
-    }else if(e.key==='Enter'){
-      sb.click();
-    }
+    else if(e.key==='Enter'){sb.click();}
   };
   window.addEventListener('keydown',keyHandler);
+
+  // Auto-focus so desktop users can type immediately; rAF ensures the element
+  // is in the DOM before focus() is called.
+  requestAnimationFrame(()=>hiddenInput.focus());
 
   updateDisplay();
   return wrap;

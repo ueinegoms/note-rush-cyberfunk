@@ -16,13 +16,7 @@
   letter-spacing: 0.08em;
 }
 
-.name-tap-hint {
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  text-align: center;
-  margin-top: -0.3rem;
-}
+
 
 /* ── CHARACTER SLOTS ── */
 .name-chars { display: flex; gap: 0.45rem; }

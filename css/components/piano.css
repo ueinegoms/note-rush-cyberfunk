@@ -93,4 +93,4 @@
 
 /* ref piano key colour states */
 .wkey.ref-upcoming { background: rgba(255,255,255,0.8); cursor: default; }
-.wkey.ref-inactive { background: rgba(255,255,255,0.8); cursor: default; }
+.wkey.selected-key { background: rgba(255,255,94,0.45); }

@@ -229,10 +229,10 @@ function render() {
   showGamePage();
 
   if      (G.phase===1) rLearn();
-  else if (G.phase===2) { rIdentify(); appendRefPiano(); }
-  else if (G.phase===3) { rPlace();    appendRefPiano(); }
-  else if (G.phase===4) { rListen();   appendRefPiano(); }
-  else if (G.phase===5) { rPlay();     appendRefPiano(); }
+  else if (G.phase===2) rIdentify();
+  else if (G.phase===3) rPlace();
+  else if (G.phase===4) rListen();
+  else if (G.phase===5) rPlay();
 }
 
 // ── PHASE 1 — LEARN ──
@@ -381,10 +381,20 @@ function rListen() {
       <button class="btn" id="listen-play">♩ Tocar nota</button>
     </div>
     <div class="opts">${G.sopts.map(nid=>`<button class="btn-option" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
-    <div id="fb"></div>`;
+    <div id="fb"></div>
+    <button class="btn" id="listen-confirm" style="display:none">✓ Confirmar</button>`;
   ct.appendChild(card);
   document.getElementById('listen-play').addEventListener('click',()=>playNote(n.f,1.2));
-  G.sopts.forEach(nid=>document.getElementById('ob-'+nid).addEventListener('click',()=>hId(nid)));
+  let selected=null;
+  G.sopts.forEach(nid=>{
+    document.getElementById('ob-'+nid).addEventListener('click',()=>{
+      selected=nid;
+      document.querySelectorAll('.btn-option').forEach(b=>b.classList.remove('selected'));
+      document.getElementById('ob-'+nid).classList.add('selected');
+      document.getElementById('listen-confirm').style.display='';
+    });
+  });
+  document.getElementById('listen-confirm').addEventListener('click',()=>{ if(selected) hId(selected); });
   setTimeout(()=>playNote(n.f,1.2),300);
 }
 
@@ -399,14 +409,22 @@ function rPlay() {
       <button class="btn" id="play-play">♩ Tocar nota</button>
     </div>
     <div id="pia"></div>
-    <div id="fb"></div>`;
+    <div id="fb"></div>
+    <button class="btn" id="play-confirm" style="display:none">✓ Confirmar</button>`;
   ct.appendChild(card);
   document.getElementById('play-play').addEventListener('click',()=>playNote(n.f,1.2));
-  // Pass game.gn() as rangeNotes so the answer piano spans the exact same
-  // octave range as the reference piano — required for X-axis sync.
-  const answerWrap = buildPiano(active,(cid,btn)=>hPiano(cid,btn),false,game.gn());
+  let pendingKey=null;
+  const answerWrap=buildPiano(active,(cid,btn)=>{
+    pendingKey=cid;
+    card.querySelectorAll('.wkey').forEach(k=>k.classList.remove('selected-key'));
+    btn.classList.add('selected-key');
+    document.getElementById('play-confirm').style.display='';
+  });
   card.querySelector('#pia').appendChild(answerWrap);
   registerKbWrapper(answerWrap);
+  document.getElementById('play-confirm').addEventListener('click',()=>{
+    if(pendingKey) hPiano(pendingKey, card.querySelector(`[data-note="${pendingKey}"]`));
+  });
   setTimeout(()=>playNote(n.f,1.2),300);
 }
 

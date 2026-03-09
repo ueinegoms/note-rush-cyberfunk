@@ -117,5 +117,6 @@ body {
 
 .btn-option:disabled { cursor: default; }
 
-.btn-option.correct { background: var(--ok); color: var(--plus1); }
-.btn-option.wrong   { background: var(--err); color: #fff; }
+.btn-option.selected { background: var(--plus2); color: var(--plus1); }
+.btn-option.correct  { background: var(--ok); color: var(--plus1); }
+.btn-option.wrong    { background: var(--err); color: #fff; }

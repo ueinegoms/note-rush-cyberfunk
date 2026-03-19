@@ -56,3 +56,46 @@
   line-height: 1;
 }
 
+/* ── MOBILE SILENT-MODE MODAL ── */
+.silent-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(27,0,147,0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1.5rem;
+}
+
+.silent-modal {
+  background: var(--bg2);
+  border: none;
+  border-radius: 0;
+  padding: 13px;
+  text-align: center;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+.silent-modal-icon {
+  font-size: 2.5rem;
+}
+
+.silent-modal-text {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #fff;
+  letter-spacing: 0.03em;
+}
+
+.silent-modal-text strong {
+  color: var(--plus2, #FFFF5E);
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+}
+

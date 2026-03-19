@@ -1,8 +1,8 @@
 // basic geometry and note definitions
-export const LS = 22; // line spacing
-export const BY = 115; // baseline y-coordinate
+export const LS = 33; // line spacing
+export const BY = 173; // baseline y-coordinate
 export const SW = 500; // staff width
-export const SH = 230; // staff height
+export const SH = 345; // staff height
 export const NX = 270; // note x position
 
 export const AN = [

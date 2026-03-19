@@ -11,6 +11,9 @@ import {buildRefPiano} from './piano.js';
 // Notes already shown in Phase 1 this session — persists across restarts
 const sessionIntroduced = new Set();
 
+// Mobile detection
+const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 // ══════════════════════════════════════════════
 //  SHARED KEYBOARD SCROLL MANAGER
 //  Both .pianow elements (ref + answer) share one scrollLeft value so they
@@ -24,7 +27,7 @@ let _kbDragEl = null, _kbDragStartX = 0, _kbDragStartScroll = 0;
 
 function resetKbScroll() {
   // Save current scroll position before clearing wrappers
-  if (_kbWrappers.length > 0 && _kbScrollX > 0) _kbSavedScroll = _kbScrollX;
+  if (_kbWrappers.length > 0) _kbSavedScroll = _kbScrollX;
   _kbWrappers.length = 0;
   _kbScrollX = 0;
 }
@@ -43,11 +46,12 @@ function registerKbWrapper(el) {
   // Apply saved scroll position, or center if first time
   if (_kbWrappers.length === 1) {
     requestAnimationFrame(() => {
-      if (_kbSavedScroll !== null) {
-        syncKbScroll(_kbSavedScroll);
-      } else {
-        syncKbScroll((el.scrollWidth - el.clientWidth) / 2);
-      }
+      const target = _kbSavedScroll !== null
+        ? _kbSavedScroll
+        : (el.scrollWidth - el.clientWidth) / 2;
+      syncKbScroll(target);
+      // Double-RAF for mobile layout timing reliability
+      if (_isMobile) requestAnimationFrame(() => syncKbScroll(target));
     });
   } else {
     el.scrollLeft = _kbScrollX;
@@ -683,10 +687,37 @@ function startGame(keepUnlocked = false) {
   render();
 }
 
+// ══════════════════════════════════════════════
+//  MOBILE SILENT-MODE WARNING
+// ══════════════════════════════════════════════
+let _silentModalShown = false;
+function ensureAudioReady(callback) {
+  if (!_isMobile || _silentModalShown) {
+    unlockAudio();
+    callback();
+    return;
+  }
+  _silentModalShown = true;
+  const overlay = document.createElement('div');
+  overlay.className = 'silent-modal-overlay';
+  overlay.innerHTML = `
+    <div class="silent-modal">
+      <div class="silent-modal-icon">🔊</div>
+      <div class="silent-modal-text">Ei, você tá no celular, né?<br>Pro som do jogo funcionar<br><strong>TIRE DO SILENCIOSO</strong></div>
+      <button class="btn" id="silent-modal-ok">OK, já tirei!</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('silent-modal-ok').addEventListener('click', () => {
+    overlay.remove();
+    unlockAudio();
+    callback();
+  });
+}
+
 // hook UI controls loaded from HTML
 function initUI() {
-  document.getElementById('start-btn').addEventListener('click', () => { unlockAudio(); startOnboarding(); });
-  document.getElementById('skip-ob-btn').addEventListener('click', () => { unlockAudio(); startGame(false); });
+  document.getElementById('start-btn').addEventListener('click', () => { ensureAudioReady(() => startOnboarding()); });
+  document.getElementById('skip-ob-btn').addEventListener('click', () => { ensureAudioReady(() => startGame(false)); });
 
   // Unlock audio on any first interaction (covers play-again etc.)
   const _unlockOnce = () => { unlockAudio(); document.removeEventListener('click', _unlockOnce); document.removeEventListener('touchstart', _unlockOnce); };

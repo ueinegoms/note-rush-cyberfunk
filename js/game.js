@@ -119,9 +119,17 @@ export function nextQ() { G.cur = null; G.ans = false; }
 
 export function shufArray(a) { return shuf(a); } // alias if needed
 
-export function onOk() {
+function comboLerp(ms, maxBonus) {
+  const MIN_T = 1000, MAX_T = 5000;
+  if (ms <= MIN_T) return maxBonus;
+  if (ms >= MAX_T) return 0;
+  return Math.round(maxBonus * (1 - (ms - MIN_T) / (MAX_T - MIN_T)));
+}
+
+export function onOk(elapsedMs) {
   G.streak++;
-  const bonus = PHASE_BONUS[G.phase] || 1;
+  const maxBonus = PHASE_BONUS[G.phase] || 1;
+  const bonus = comboLerp(elapsedMs, maxBonus);
   G.combo += bonus;
   if (G.combo > G.bestCombo) G.bestCombo = G.combo;
   G.ans = true;

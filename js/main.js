@@ -126,7 +126,16 @@ function showIntroPage() {
 // ══════════════════════════════════════════════
 //  LIGHTNING
 // ══════════════════════════════════════════════
-function lightning() {
+function lightningIntensity(ms) {
+  const MIN_T = 1000, MAX_T = 5000;
+  if (ms <= MIN_T) return 1;
+  if (ms >= MAX_T) return 0;
+  return 1 - (ms - MIN_T) / (MAX_T - MIN_T);
+}
+
+function lightning(t) {
+  if (t === undefined) t = 1;
+  if (t <= 0) return;
   const cv = document.createElement('canvas');
   cv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999';
   cv.width = window.innerWidth; cv.height = window.innerHeight;
@@ -134,12 +143,33 @@ function lightning() {
   const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
   const COLOR = '#FFFF5E';
 
-  function genBolt(sx, sy) {
-    const pts = [{x:sx, y:sy, radiate:false}];
-    let cx = sx, cy = sy, ang = Math.random() * Math.PI * 2;
-    const steps = 9 + Math.floor(Math.random() * 6);
-    const base = Math.min(W, H) * 0.11;
-    for (let i = 0; i < steps; i++) {
+  const mix = (lo, hi) => lo + t * (hi - lo);
+
+  const glowWidth  = mix(1, 4);
+  const coreWidth  = mix(0.5, 1.5);
+  const glowBlur   = mix(4, 22);
+  const coreBlur   = mix(1, 5);
+  const rayBlur    = mix(2, 14);
+  const stepBase   = mix(0.03, 0.33);
+  const stepCount  = Math.round(mix(3, 15));
+  const rayMin     = Math.round(mix(1, 5));
+  const rayExtra   = Math.round(mix(0, 5));
+  const rayLenMin  = mix(4, 18);
+  const rayLenRand = mix(6, 38);
+
+  // All bolts spread outward from one random origin
+  const ox = Math.random() * W, oy = Math.random() * H;
+  const maxSpread = mix(0.08, 1.5);
+
+  function genBolt(spreadFrac) {
+    const r = spreadFrac * Math.max(W, H) * maxSpread;
+    const a0 = Math.random() * Math.PI * 2;
+    const sx = ox + Math.cos(a0) * r * Math.random();
+    const sy = oy + Math.sin(a0) * r * Math.random();
+    const pts = [{x:sx, y:sy, rays:[]}];
+    let cx = sx, cy = sy, ang = a0 + (Math.random() - 0.5) * 2;
+    const base = Math.min(W, H) * stepBase;
+    for (let i = 0; i < stepCount; i++) {
       ang += (Math.random() - 0.5) * 1.5;
       let nx = cx + Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
       let ny = cy + Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
@@ -148,51 +178,71 @@ function lightning() {
       if (nx > W)  { nx = W; ang = Math.PI - ang; hit = true; }
       if (ny < 0)  { ny = 0; ang = -ang;           hit = true; }
       if (ny > H)  { ny = H; ang = -ang;           hit = true; }
-      pts.push({x:nx, y:ny, radiate:hit});
+      const rays = [];
+      if (hit) {
+        const count = rayMin + Math.floor(Math.random() * rayExtra);
+        for (let rr = 0; rr < count; rr++) {
+          const a = (rr / count) * Math.PI * 2;
+          const len = rayLenMin + Math.random() * rayLenRand;
+          rays.push({ a, len });
+        }
+      }
+      pts.push({x:nx, y:ny, rays});
       cx = nx; cy = ny;
     }
     return pts;
   }
 
-  function drawBolt(pts, alpha) {
+  function drawBolt(pts, alpha, reveal, pulseBlur) {
+    const n = Math.max(2, Math.ceil(pts.length * reveal));
+    const vis = pts.slice(0, n);
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = COLOR;
     ctx.shadowColor = COLOR;
-    // glow
-    ctx.lineWidth = 7; ctx.shadowBlur = 22;
+    ctx.lineWidth = glowWidth; ctx.shadowBlur = glowBlur * pulseBlur;
     ctx.beginPath();
-    pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    vis.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
     ctx.stroke();
-    // core
-    ctx.lineWidth = 1.5; ctx.shadowBlur = 5;
+    ctx.lineWidth = coreWidth; ctx.shadowBlur = coreBlur * pulseBlur;
     ctx.beginPath();
-    pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    vis.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
     ctx.stroke();
-    // edge radiations
-    pts.filter(p => p.radiate).forEach(p => {
-      const rays = 5 + Math.floor(Math.random() * 5);
-      for (let r = 0; r < rays; r++) {
-        const a = (r / rays) * Math.PI * 2;
-        const len = 18 + Math.random() * 38;
-        ctx.lineWidth = 1.5; ctx.shadowBlur = 14;
+    vis.forEach(p => {
+      p.rays.forEach(ray => {
+        ctx.lineWidth = coreWidth; ctx.shadowBlur = rayBlur * pulseBlur;
         ctx.beginPath(); ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x + Math.cos(a)*len, p.y + Math.sin(a)*len);
+        ctx.lineTo(p.x + Math.cos(ray.a)*ray.len, p.y + Math.sin(ray.a)*ray.len);
         ctx.stroke();
-      }
+      });
     });
   }
 
-  const numBolts = 2 + Math.floor(Math.random() * 2);
-  const bolts = Array.from({length:numBolts}, () => genBolt(Math.random()*W, Math.random()*H));
-  let frame = 0;
-  const TOTAL = 22;
-  function tick() {
-    frame++;
+  const numBolts = Math.max(1, Math.round(mix(1, 15)));
+  const TOTAL_MS = 320;
+  const SPREAD_MS = 200;  // reveal segments over first 200ms
+  const FADE_MS = TOTAL_MS - SPREAD_MS; // fade everything over last 120ms
+  const PULSE_MS = 140;
+  const bolts = [];
+  for (let i = 0; i < numBolts; i++) {
+    const spreadFrac = i / Math.max(1, numBolts - 1);
+    bolts.push(genBolt(spreadFrac));
+  }
+
+  let t0 = -1;
+  function tick(now) {
+    if (t0 < 0) t0 = now; // capture start from first actual frame
+    const elapsed = now - t0;
+    if (elapsed >= TOTAL_MS) { cv.remove(); return; }
+    const reveal = Math.min(1, elapsed / SPREAD_MS);
+    let alpha = 1;
+    if (elapsed > SPREAD_MS) {
+      alpha = Math.max(0, 1 - (elapsed - SPREAD_MS) / FADE_MS);
+    }
+    const pulsePhase = (elapsed % PULSE_MS) / PULSE_MS;
+    const pulseBlur = 0.4 + 0.6 * (pulsePhase < 0.5 ? pulsePhase * 2 : 2 - pulsePhase * 2);
     ctx.clearRect(0, 0, W, H);
-    const alpha = frame <= 3 ? 1 : Math.max(0, 1 - (frame - 3) / (TOTAL - 3));
-    bolts.forEach(pts => drawBolt(pts, alpha));
-    if (frame < TOTAL) requestAnimationFrame(tick);
-    else cv.remove();
+    bolts.forEach(pts => drawBolt(pts, alpha, reveal, pulseBlur));
+    requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
@@ -215,7 +265,10 @@ function advancePhaseWithRender(oldPhase) {
 // ══════════════════════════════════════════════
 const ct = document.getElementById('ct');
 let _questionStart = 0;
-function stampQuestion() { _questionStart = Date.now(); }
+let _selectionTime = 0;
+function stampQuestion() { _questionStart = Date.now(); _selectionTime = 0; }
+function stampSelection() { _selectionTime = Date.now(); }
+function selectionElapsed() { return (_selectionTime || Date.now()) - _questionStart; }
 function reactionDelay() { return Math.min(Date.now() - _questionStart, 800); }
 
 function updateComboDisplay() {
@@ -308,7 +361,7 @@ function rIdentify() {
     <div id="fb"></div>`;
   ct.appendChild(card);
   ch.forEach(nid=>{
-    document.getElementById('ob-'+nid).addEventListener('click',()=>hId(nid));
+    document.getElementById('ob-'+nid).addEventListener('click',()=>{ stampSelection(); hId(nid); });
   });
 }
 
@@ -348,13 +401,13 @@ function initDragStaff(note) {
     function snapToValid(sp){return validSps.reduce((b,v)=>Math.abs(v-sp)<Math.abs(b-sp)?v:b,validSps[0]);}
     staffEl.addEventListener('touchstart',e=>{if(G.ans)return;e.preventDefault();startY=e.touches[0].clientY;startSp=_dragSp;},{passive:false});
     staffEl.addEventListener('touchmove',e=>{if(G.ans||startY===null)return;e.preventDefault();const dy=startY-e.touches[0].clientY;_dragSp=snapToValid(Math.max(minSp,Math.min(maxSp,startSp+Math.round(dy/PX_PER_STEP))));if(_dragSp!==_lastDragSp){renderDrag();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn){const c=playNote(nd(mn).f,0.4);} _lastDragSp=_dragSp;}},{passive:false});
-    staffEl.addEventListener('touchend',e=>{if(G.ans||startY===null)return;e.preventDefault();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);startY=null;},{passive:false});
+    staffEl.addEventListener('touchend',e=>{if(G.ans||startY===null)return;e.preventDefault();stampSelection();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);startY=null;},{passive:false});
   } else {
     let _hoverSp=null;
     renderDrag(null);
     staffEl.addEventListener('mousemove',e=>{if(G.ans)return;const rect=staffEl.getBoundingClientRect();const scale=SH/rect.height;const svgY=(e.clientY-rect.top)*scale;const rawSp=(BY-svgY)/(LS/2);const snapped=validSps.reduce((b,v)=>Math.abs(v-rawSp)<Math.abs(b-rawSp)?v:b,validSps[0]);if(snapped!==_hoverSp){_hoverSp=snapped;_dragSp=snapped;renderDrag(_hoverSp);}});
     staffEl.addEventListener('mouseleave',()=>{if(G.ans)return;_hoverSp=null;renderDrag(null);});
-    staffEl.addEventListener('click',e=>{if(G.ans||_hoverSp===null)return;const chosen=game.ga().find(nid=>nd(nid).s+5===_hoverSp);if(chosen)hPlace(chosen);});
+    staffEl.addEventListener('click',e=>{if(G.ans||_hoverSp===null)return;stampSelection();const chosen=game.ga().find(nid=>nd(nid).s+5===_hoverSp);if(chosen)hPlace(chosen);});
   }
 }
 
@@ -362,8 +415,8 @@ function hPlaceDrag() {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur, corSp=nd(cor).s+5, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb'), confirmBtn=document.getElementById('drag-confirm');
   if(confirmBtn) confirmBtn.disabled=true;
-  if(_dragSp===corSp){staffEl.innerHTML=buildStaffDrag(_dragSp,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk();
-    jOkChord(nd(cor).f); lightning(); updateComboDisplay();
+  if(_dragSp===corSp){staffEl.innerHTML=buildStaffDrag(_dragSp,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
+    jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
     setTimeout(()=>{game.nextQ();render();},rd);
@@ -377,8 +430,8 @@ function hPlaceDrag() {
 function hPlace(chosen) {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb');
-  if(chosen===cor){staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk();
-    jOkChord(nd(cor).f); lightning(); updateComboDisplay();
+  if(chosen===cor){staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
+    jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
     setTimeout(()=>{game.nextQ();render();},rd);
@@ -401,20 +454,12 @@ function rListen() {
       <button class="btn" id="listen-play">♩ Tocar nota</button>
     </div>
     <div class="opts">${G.sopts.map(nid=>`<button class="btn-option" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
-    <div id="fb"></div>
-    <button class="btn" id="listen-confirm" style="display:none">✓ Confirmar</button>`;
+    <div id="fb"></div>`;
   ct.appendChild(card);
   document.getElementById('listen-play').addEventListener('click',()=>playNote(n.f,1.2));
-  let selected=null;
   G.sopts.forEach(nid=>{
-    document.getElementById('ob-'+nid).addEventListener('click',()=>{
-      selected=nid;
-      document.querySelectorAll('.btn-option').forEach(b=>b.classList.remove('selected'));
-      document.getElementById('ob-'+nid).classList.add('selected');
-      document.getElementById('listen-confirm').style.display='';
-    });
+    document.getElementById('ob-'+nid).addEventListener('click',()=>{ stampSelection(); hId(nid); });
   });
-  document.getElementById('listen-confirm').addEventListener('click',()=>{ if(selected) hId(selected); });
   setTimeout(()=>playNote(n.f,1.2),300);
 }
 
@@ -435,6 +480,7 @@ function rPlay() {
   document.getElementById('play-play').addEventListener('click',()=>playNote(n.f,1.2));
   let pendingKey=null;
   const answerWrap=buildRefPiano(active, game.gn(), (cid,btn)=>{
+    stampSelection();
     pendingKey=cid;
     card.querySelectorAll('.wkey').forEach(k=>k.classList.remove('selected-key'));
     btn.classList.add('selected-key');
@@ -488,8 +534,8 @@ function hId(chosen) {
   document.querySelectorAll('.btn-option').forEach(b=>b.disabled=true);
   document.getElementById('ob-'+cor)?.classList.add('correct');
   const fb=document.getElementById('fb');
-  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';if(G.phase!==5)playNote(nd(cor).f,.8);onOk();
-      jOkChord(nd(cor).f); lightning(); updateComboDisplay();
+  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';if(G.phase!==5)playNote(nd(cor).f,.8);onOk(selectionElapsed());
+      jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
       const {sfp}=game.S(); const rd=reactionDelay();
       if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
       setTimeout(()=>{game.nextQ();render();},rd);
@@ -506,8 +552,8 @@ function hPiano(chosen,btn) {
   document.querySelectorAll('.wkey:not(.inactive),.bkey').forEach(k=>{k.classList.add('dis');k.style.pointerEvents='none';});
   document.querySelector('.wkey[data-note="'+cor+'"]')?.classList.add('ck');
   const fb=document.getElementById('fb');
-  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';onOk();
-      jOkChord(nd(cor).f); lightning(); updateComboDisplay();
+  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';onOk(selectionElapsed());
+      jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
       const {sfp}=game.S(); const rd=reactionDelay();
       if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
       setTimeout(()=>{game.nextQ();render();},rd);

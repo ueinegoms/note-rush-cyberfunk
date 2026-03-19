@@ -656,68 +656,71 @@ function obStep2() {
   const card = document.createElement('div');
   card.className = 'panel pop-in';
   card.innerHTML = `
-    <div class="ob-question">Você quer treinar os ouvidos também?</div>
+    <div class="ob-question">Você quer ser apresentado as notas?</div>
+    <button class="btn" id="ob-intro-yes">Sim</button>
+    <button class="btn btn-ghost" id="ob-intro-no">Não</button>
+  `;
+  ct.appendChild(card);
+  document.getElementById('ob-intro-yes').addEventListener('click', () => { setPhaseChecked('ph1', true); obStep3(); });
+  document.getElementById('ob-intro-no').addEventListener('click', () => { setPhaseChecked('ph1', false); obStep3(); });
+}
+
+function obStep3() {
+  ct.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-question">Você quer treinar a pauta?</div>
+    <button class="btn" id="ob-staff-yes">Sim</button>
+    <button class="btn btn-ghost" id="ob-staff-no">Não</button>
+  `;
+  ct.appendChild(card);
+  document.getElementById('ob-staff-yes').addEventListener('click', () => {
+    setPhaseChecked('ph2', true);
+    setPhaseChecked('ph3', true);
+    obStep4();
+  });
+  document.getElementById('ob-staff-no').addEventListener('click', () => {
+    setPhaseChecked('ph2', false);
+    setPhaseChecked('ph3', false);
+    setPhaseChecked('ph4', true);
+    obStep5();
+  });
+}
+
+function obStep4() {
+  ct.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-question">Você também quer treinar ouvidos?</div>
     <button class="btn" id="ob-ears-yes">Sim</button>
     <button class="btn btn-ghost" id="ob-ears-no">Não</button>
   `;
   ct.appendChild(card);
   document.getElementById('ob-ears-yes').addEventListener('click', () => {
     setPhaseChecked('ph4', true);
-    obStepRef();
+    obStep5();
   });
   document.getElementById('ob-ears-no').addEventListener('click', () => {
     setPhaseChecked('ph4', false);
     setPhaseChecked('ph5', false);
-    obStepIntro();
+    startGame(false);
   });
 }
 
-function obStepRef() {
+function obStep5() {
   ct.innerHTML = '';
   const card = document.createElement('div');
   card.className = 'panel pop-in';
   card.innerHTML = `
-    <div class="ob-question">Você também quer treinar de ouvido?</div>
+    <div class="ob-question">Você também quer treinar de ouvido (sem referência)?</div>
     <button class="btn" id="ob-ref-yes">Sim</button>
     <button class="btn btn-ghost" id="ob-ref-no">Não</button>
   `;
   ct.appendChild(card);
-  document.getElementById('ob-ref-yes').addEventListener('click', () => {
-    setPhaseChecked('ph5', true);
-    obStepIntro();
-  });
-  document.getElementById('ob-ref-no').addEventListener('click', () => {
-    setPhaseChecked('ph5', false);
-    obStepIntro();
-  });
-}
-
-function obStepIntro() {
-  ct.innerHTML = '';
-  const card = document.createElement('div');
-  card.className = 'panel pop-in';
-  card.innerHTML = `
-    <div class="ob-question">Você quer ser apresentado as notas?</div>
-    <button class="btn" id="ob-intro-yes">Sim</button>
-    <button class="btn btn-ghost" id="ob-intro-no">Não</button>
-  `;
-  ct.appendChild(card);
-  document.getElementById('ob-intro-yes').addEventListener('click', () => { setPhaseChecked('ph1', true); obStepStaff(); });
-  document.getElementById('ob-intro-no').addEventListener('click', () => { setPhaseChecked('ph1', false); obStepStaff(); });
-}
-
-function obStepStaff() {
-  ct.innerHTML = '';
-  const card = document.createElement('div');
-  card.className = 'panel pop-in';
-  card.innerHTML = `
-    <div class="ob-question">Você quer treinar também a pauta?</div>
-    <button class="btn" id="ob-staff-yes">Sim</button>
-    <button class="btn btn-ghost" id="ob-staff-no">Não</button>
-  `;
-  ct.appendChild(card);
-  document.getElementById('ob-staff-yes').addEventListener('click', () => { setPhaseChecked('ph2', true); setPhaseChecked('ph3', true); startGame(false); });
-  document.getElementById('ob-staff-no').addEventListener('click', () => { setPhaseChecked('ph2', false); setPhaseChecked('ph3', false); startGame(false); });
+  document.getElementById('ob-ref-yes').addEventListener('click', () => { setPhaseChecked('ph5', true); startGame(false); });
+  document.getElementById('ob-ref-no').addEventListener('click', () => { setPhaseChecked('ph5', false); startGame(false); });
 }
 
 // ══════════════════════════════════════════════

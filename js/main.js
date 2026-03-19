@@ -656,6 +656,7 @@ function obStep2() {
   const card = document.createElement('div');
   card.className = 'panel pop-in';
   card.innerHTML = `
+    <div class="ob-icon">👋</div>
     <div class="ob-question">Você quer ser apresentado as notas?</div>
     <button class="btn" id="ob-intro-yes">Sim</button>
     <button class="btn btn-ghost" id="ob-intro-no">Não</button>
@@ -670,6 +671,7 @@ function obStep3() {
   const card = document.createElement('div');
   card.className = 'panel pop-in';
   card.innerHTML = `
+    <div class="ob-icon">🎼</div>
     <div class="ob-question">Você quer treinar a pauta?</div>
     <button class="btn" id="ob-staff-yes">Sim</button>
     <button class="btn btn-ghost" id="ob-staff-no">Não</button>
@@ -693,7 +695,8 @@ function obStep4() {
   const card = document.createElement('div');
   card.className = 'panel pop-in';
   card.innerHTML = `
-    <div class="ob-question">Você também quer treinar ouvidos?</div>
+    <div class="ob-icon">👂🎹</div>
+    <div class="ob-question">Você também quer treinar de ouvido?</div>
     <button class="btn" id="ob-ears-yes">Sim</button>
     <button class="btn btn-ghost" id="ob-ears-no">Não</button>
   `;
@@ -714,7 +717,8 @@ function obStep5() {
   const card = document.createElement('div');
   card.className = 'panel pop-in';
   card.innerHTML = `
-    <div class="ob-question">Você também quer treinar de ouvido (sem referência)?</div>
+    <div class="ob-icon">&#x1F648;&#x1F442;</div>
+    <div class="ob-question">Você também quer treinar o ouvido sem referência (mt difícil)?</div>
     <button class="btn" id="ob-ref-yes">Sim</button>
     <button class="btn btn-ghost" id="ob-ref-no">Não</button>
   `;

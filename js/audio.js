@@ -1,7 +1,29 @@
 let actx = null;
+let _unlocked = false;
+
 export function ctx2() {
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
   return actx;
+}
+
+// Unlock Web Audio on iOS (including silent-mode workaround).
+// Must be called from a user-gesture handler (click/touchend).
+export function unlockAudio() {
+  if (_unlocked) return;
+  _unlocked = true;
+  const c = ctx2();
+  if (c.state === 'suspended') c.resume();
+  // iOS silent-mode trick: play a tiny silent buffer through an <audio> element
+  // to activate the hardware audio session, then route Web Audio through it.
+  try {
+    const buf = c.createBuffer(1, 1, c.sampleRate);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.connect(c.destination);
+    src.start(0);
+    src.stop(c.currentTime + 0.001);
+  } catch (_) { /* ignore */ }
 }
 
 const TIMBRES = [
@@ -14,7 +36,7 @@ const TIMBRES = [
       o.connect(g);
       g.connect(c.destination);
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.28, t + 0.018);
+      g.gain.linearRampToValueAtTime(0.55, t + 0.018);
       g.gain.exponentialRampToValueAtTime(0.001, t + 0.95);
       o.start(t);
       o.stop(t + 1);
@@ -28,7 +50,7 @@ const TIMBRES = [
         o.type = 'sine';
         o.frequency.value = freq * (i === 0 ? 1 : i === 1 ? 2 : 3);
         o.detune.value = detune;
-        const vol = i === 0 ? 0.22 : i === 1 ? 0.08 : 0.04;
+        const vol = i === 0 ? 0.44 : i === 1 ? 0.16 : 0.08;
         o.connect(g);
         g.connect(c.destination);
         g.gain.setValueAtTime(0, t);
@@ -60,7 +82,7 @@ export function jOkChord(rootFreq) {
     o.frequency.value = f;
     o.connect(g); g.connect(c.destination);
     g.gain.setValueAtTime(0, t + delay);
-    g.gain.linearRampToValueAtTime(0.2, t + delay + 0.015);
+    g.gain.linearRampToValueAtTime(0.35, t + delay + 0.015);
     g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.65);
     o.start(t + delay);
     o.stop(t + delay + 0.7);
@@ -77,7 +99,7 @@ export function jErrChord(rootFreq) {
     o.frequency.value = f;
     o.connect(g); g.connect(c.destination);
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(i === 0 ? 0.1 : 0.055, t + 0.01);
+    g.gain.linearRampToValueAtTime(i === 0 ? 0.18 : 0.1, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
     o.start(t);
     o.stop(t + 0.45);

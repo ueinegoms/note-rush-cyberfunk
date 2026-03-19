@@ -90,9 +90,16 @@ body {
   border: none;
 }
 
-.btn-ghost:hover, .btn-ghost:active {
+.btn-ghost:active {
   background: var(--plus2);
   color: var(--plus1);
+}
+
+@media (hover: hover) {
+  .btn-ghost:hover {
+    background: var(--plus2);
+    color: var(--plus1);
+  }
 }
 
 /* option variant — stage 2/4 note choices: dark bg, yellow text */

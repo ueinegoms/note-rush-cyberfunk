@@ -42,7 +42,10 @@
 
   <div class="panel" id="lb-intro"></div>
 
-  <button id="start-btn" class="btn">JOGAR</button>
+  <div class="intro-actions">
+    <button id="start-btn" class="btn">JOGAR</button>
+    <button id="skip-ob-btn">Pular onboarding</button>
+  </div>
 
 </div>
 
@@ -69,9 +72,9 @@
   <div class="sr">
     <div class="sr-label">
       <span>notas iniciais</span>
-      <span class="sr-val" id="sni-v">2</span>
+      <span class="sr-val" id="sni-v">3</span>
     </div>
-    <input type="range" id="sni" min="1" max="13" value="2">
+    <input type="range" id="sni" min="1" max="13" value="3">
   </div>
 
   <div class="sr">
@@ -107,7 +110,7 @@
   </label>
 
   <label class="btn ptoggle-row" id="row-ph4" data-phase="ph4">
-    <span class="ptoggle-label">ouvir</span>
+    <span class="ptoggle-label">tocar</span>
     <label class="toggle-sw">
       <input type="checkbox" id="ph4" checked>
       <div class="toggle-track"><div class="toggle-thumb"></div></div>
@@ -115,7 +118,7 @@
   </label>
 
   <label class="btn ptoggle-row" id="row-ph5" data-phase="ph5">
-    <span class="ptoggle-label">tocar</span>
+    <span class="ptoggle-label">ouvir</span>
     <label class="toggle-sw">
       <input type="checkbox" id="ph5" checked>
       <div class="toggle-track"><div class="toggle-thumb"></div></div>

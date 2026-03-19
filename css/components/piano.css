@@ -4,15 +4,18 @@
 ══════════════════════════════════════ */
 
 .pianow {
-  /* Overflow is hidden — scrollLeft is controlled by the shared JS scroll manager.
-     This removes native scrollbars while keeping programmatic scrolling. */
+  /* Horizontal overflow hidden — scrollLeft controlled by shared JS scroll manager. */
   overflow: hidden;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: flex;
   justify-content: flex-start;
   touch-action: none;   /* JS handles all touch gestures */
   cursor: grab;
   user-select: none;
+  flex-shrink: 0;
+  /* height is set by JS via registerKbWrapper to match .piano child */
 }
 .pianow:active { cursor: grabbing; }
 
@@ -25,7 +28,7 @@
 /* ── WHITE KEYS ── */
 .wkey {
   position: absolute;
-  height: 112px;
+  /* height set inline by JS (88px narrow / 112px wide) */
   background: #ffffff;
   cursor: pointer;
   display: flex;
@@ -35,7 +38,7 @@
   padding-bottom: 6px;
   transition: background 0.08s;
   user-select: none;
-  touch-action: manipulation;
+  touch-action: none;
 }
 
 .wkey.inactive { background: rgba(255,255,255,0.8); cursor: default; }
@@ -57,13 +60,12 @@
 /* ── BLACK KEYS ── */
 .bkey {
   position: absolute;
-  width: 22px;
-  height: 68px;
+  /* width and height set inline by JS */
   background: #0A0820;
   z-index: 2;
   cursor: pointer;
   transition: background 0.08s;
-  touch-action: manipulation;
+  touch-action: none;
 }
 
 .bkey.dis     { cursor: default; pointer-events: none; }
@@ -72,6 +74,7 @@
 /* ── REFERENCE PIANO wrapper — sits below stage content ── */
 .ref-piano-outer {
   width: 100%;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -94,3 +97,12 @@
 /* ref piano key colour states */
 .wkey.ref-upcoming { background: rgba(255,255,255,0.8); cursor: default; }
 .wkey.selected-key { background: rgba(255,255,94,0.45); }
+
+/* Desktop: show full piano centered, no scroll needed */
+@media (min-width: 700px) {
+  .pianow {
+    overflow: visible;
+    justify-content: center;
+  }
+  .ref-piano-outer { max-width: none; }
+}

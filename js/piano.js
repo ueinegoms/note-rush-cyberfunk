@@ -1,73 +1,13 @@
 import {nd} from './constants.js';
 import {playNote} from './audio.js';
 
-// Build a piano keyboard element. `activeNotes` is an array of note ids
-// that should be highlighted/interactive. `onKey(id,element)` is callback for
-// when the user presses a key. if `disAll` is true all keys are disabled.
-// `rangeNotes` optionally overrides the octave range (pass allScale so the
-// answer piano spans the same keys as the reference piano — required for sync).
-export function buildPiano(activeNotes, onKey, disAll = false, rangeNotes = null) {
-  const activeChrom = CHROMATIC.filter(k => k.id && activeNotes.includes(k.id));
-  if (!activeChrom.length) return document.createElement('div');
-  const rangeChrom = rangeNotes
-    ? CHROMATIC.filter(k => k.id && rangeNotes.includes(k.id))
-    : activeChrom;
-  const minOct = Math.min(...rangeChrom.map(k => k.oct));
-  const maxOct = Math.max(...rangeChrom.map(k => k.oct));
-  const range = CHROMATIC.filter(k => k.oct >= minOct && k.oct <= maxOct);
-  const whites = range.filter(k => !k.isB);
-  const isNarrow = window.innerWidth <= 480;
-  const GAP = 2, WW = isNarrow ? 30 : 42, WH = isNarrow ? 88 : 112;
-  const totalW = whites.length * (WW + GAP);
-  const wrap = document.createElement('div'); wrap.className = 'pianow';
-  const piano = document.createElement('div'); piano.className = 'piano';
-  piano.style.width = totalW + 'px'; piano.style.height = WH + 'px';
-
-  whites.forEach((k, wi) => {
-    const isActive = k.id && activeNotes.includes(k.id);
-    const btn = document.createElement('div');
-    btn.className = 'wkey' + (disAll ? ' dis' : '') + (k.id && !isActive ? ' inactive' : '');
-    btn.style.cssText = `left:${wi*(WW+GAP)}px;width:${WW}px;`;
-    if (k.id) btn.dataset.note = k.id;
-    if (isActive && k.id) {
-      const n = nd(k.id);
-      btn.innerHTML = `<div class="wlbl">${n.lb.replace(/(₃|₄|₅)/,'\n$1')}</div>`;
-    }
-    if (!disAll && isActive && k.id) {
-      const n = nd(k.id);
-      let _tapped = false;
-      btn.addEventListener('touchstart', e=>{e.preventDefault(); playNote(n.f,.7); btn.classList.add('pressed');},{passive:false});
-      btn.addEventListener('touchend', e=>{e.preventDefault(); btn.classList.remove('pressed'); if(!_tapped){_tapped=true; onKey(k.id,btn); setTimeout(()=>_tapped=false,350);}},{passive:false});
-      btn.addEventListener('mousedown', ()=>{playNote(n.f,.7); btn.classList.add('pressed');});
-      btn.addEventListener('mouseup',   ()=>btn.classList.remove('pressed'));
-      btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
-      btn.addEventListener('click', ()=>onKey(k.id, btn));
-    }
-    piano.appendChild(btn);
-  });
-
-  range.filter(k=>k.isB).forEach(k => {
-    const lwi = whites.findIndex(w=>w.oct===k.oct&&w.pc===k.pc-1);
-    if (lwi<0) return;
-    const bx = lwi*(WW+GAP)+WW*0.6;
-    const btn = document.createElement('div');
-    btn.className = 'bkey' + (disAll?' dis':'');
-    btn.style.cssText = `left:${bx}px;top:0;`;
-    if (!disAll) {
-      btn.addEventListener('touchstart', e=>{e.preventDefault(); playNote(k.f,.7); btn.classList.add('pressed');},{passive:false});
-      btn.addEventListener('touchend', e=>{e.preventDefault(); btn.classList.remove('pressed');},{passive:false});
-      btn.addEventListener('mousedown', ()=>{playNote(k.f,.7); btn.classList.add('pressed');});
-      btn.addEventListener('mouseup',   ()=>btn.classList.remove('pressed'));
-      btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
-    }
-    piano.appendChild(btn);
-  });
-  wrap.appendChild(piano);
-  return wrap;
-}
-
-// reference-piano builder used by `ui.appendRefPiano`
-export function buildRefPiano(active, allScale) {
+// Unified piano builder.
+// `active`   — array of note ids that are highlighted/interactive.
+// `allScale` — full scale range (determines which octaves are shown).
+// `onKey`    — optional callback(id, element). When set, active keys become
+//              selectable answer keys (tap = play + select). dataset.note is
+//              set so the caller can query keys later.
+export function buildRefPiano(active, allScale, onKey = null) {
   const CHROM = CHROMATIC;
   const scaleChrom = CHROM.filter(k=>k.id&&allScale.includes(k.id));
   if (!scaleChrom.length) return document.createElement('div');
@@ -75,7 +15,7 @@ export function buildRefPiano(active, allScale) {
   const range=CHROM.filter(k=>k.oct>=minOct&&k.oct<=maxOct);
   const whites=range.filter(k=>!k.isB);
   const isNarrow = window.innerWidth <= 480;
-  const GAP=2, WW=isNarrow?30:42, WH=isNarrow?88:112;
+  const GAP=2, WW=isNarrow?30:42, WH=isNarrow?88:112, BW=isNarrow?18:22, BH=isNarrow?53:68;
   const totalW=whites.length*(WW+GAP);
   const wrap=document.createElement('div'); wrap.className='pianow';
   const piano=document.createElement('div'); piano.className='piano';
@@ -89,8 +29,9 @@ export function buildRefPiano(active, allScale) {
     // ref-upcoming = in scale but locked; ref-inactive = outside scale entirely
     const colorClass = isActive ? '' : inScale ? 'ref-upcoming' : 'ref-inactive';
     btn.className='wkey'+( colorClass?' '+colorClass:'')+(isActive?'':!inScale?' inactive':'');
-    btn.style.cssText=`left:${x}px;width:${WW}px;`;
+    btn.style.cssText=`left:${x}px;width:${WW}px;height:${WH}px;`;
     if(isActive&&k.id){
+      if(onKey) btn.dataset.note = k.id;
       const n=nd(k.id);
       const lbEl=document.createElement('div');
       lbEl.className='wlbl';
@@ -100,13 +41,24 @@ export function buildRefPiano(active, allScale) {
     if(k.id){
       const n=nd(k.id);
       if(n){
-        const press=()=>{ playNote(n.f,.55); btn.classList.add('pressed'); };
-        const rel=()=>{ btn.classList.remove('pressed'); };
-        btn.addEventListener('mousedown',press);
-        btn.addEventListener('mouseup',rel);
-        btn.addEventListener('mouseleave',rel);
-        btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
-        btn.addEventListener('touchend',e=>{e.preventDefault();rel();},{passive:false});
+        if(onKey && isActive){
+          // Answer mode: deferred play, selection callback
+          let _tapped=false;
+          btn.addEventListener('mousedown',()=>{playNote(n.f,.7); btn.classList.add('pressed');});
+          btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
+          btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
+          btn.addEventListener('click',()=>onKey(k.id,btn));
+          btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
+          btn.addEventListener('touchend',e=>{e.preventDefault(); btn.classList.remove('pressed'); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; if(!_tapped){_tapped=true; playNote(n.f,.7); onKey(k.id,btn); setTimeout(()=>_tapped=false,350);}},{passive:false});
+        } else {
+          // Reference mode: just play on press
+          const rel=()=>{ btn.classList.remove('pressed'); };
+          btn.addEventListener('mousedown',()=>{playNote(n.f,.55); btn.classList.add('pressed');});
+          btn.addEventListener('mouseup',rel);
+          btn.addEventListener('mouseleave',rel);
+          btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
+          btn.addEventListener('touchend',e=>{e.preventDefault(); rel(); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; playNote(n.f,.55);},{passive:false});
+        }
       }
     }
     piano.appendChild(btn);
@@ -116,12 +68,11 @@ export function buildRefPiano(active, allScale) {
     const lwi=whites.findIndex(w=>w.oct===k.oct&&w.pc===k.pc-1); if(lwi<0)return;
     const bx=lwi*(WW+GAP)+WW*.63;
     const btn=document.createElement('div'); btn.className='bkey';
-    btn.style.cssText=`left:${bx}px;top:0;`;
-    const press=()=>{ playNote(k.f,.55); btn.classList.add('pressed'); };
+    btn.style.cssText=`left:${bx}px;top:0;width:${BW}px;height:${BH}px;`;
     const rel=()=>{ btn.classList.remove('pressed'); };
-    btn.addEventListener('mousedown',press); btn.addEventListener('mouseup',rel); btn.addEventListener('mouseleave',rel);
-    btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
-    btn.addEventListener('touchend',e=>{e.preventDefault();rel();},{passive:false});
+    btn.addEventListener('mousedown',()=>{playNote(k.f,.55); btn.classList.add('pressed');}); btn.addEventListener('mouseup',rel); btn.addEventListener('mouseleave',rel);
+    btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
+    btn.addEventListener('touchend',e=>{e.preventDefault(); rel(); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; playNote(k.f,.55);},{passive:false});
     piano.appendChild(btn);
   });
 

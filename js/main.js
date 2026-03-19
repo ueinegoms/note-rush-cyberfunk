@@ -1,12 +1,12 @@
 import {LS,BY,SW,SH,NX,AN,NS,nd} from './constants.js';
 import {shuf} from './utils.js';
-import {playNote,jOkChord,jErrChord} from './audio.js';
+import {playNote,jOkChord,jErrChord,unlockAudio} from './audio.js';
 import {G, lockAnswer, unlockAnswer} from './state.js';
 import * as game from './game.js';
 import {onOk, onErr} from './game.js';
 import * as lb from './leaderboard.js';
 import {buildStaff, buildStaffDrag, NY} from './staff.js';
-import {buildPiano, buildRefPiano} from './piano.js';
+import {buildRefPiano} from './piano.js';
 
 // Notes already shown in Phase 1 this session — persists across restarts
 const sessionIntroduced = new Set();
@@ -18,10 +18,13 @@ const sessionIntroduced = new Set();
 //  dragging anywhere on the piano background moves both.
 // ══════════════════════════════════════════════
 let _kbScrollX = 0;
+let _kbSavedScroll = null;   // persists user scroll across render cycles
 const _kbWrappers = [];
 let _kbDragEl = null, _kbDragStartX = 0, _kbDragStartScroll = 0;
 
 function resetKbScroll() {
+  // Save current scroll position before clearing wrappers
+  if (_kbWrappers.length > 0 && _kbScrollX > 0) _kbSavedScroll = _kbScrollX;
   _kbWrappers.length = 0;
   _kbScrollX = 0;
 }
@@ -34,27 +37,40 @@ function syncKbScroll(left) {
 
 function registerKbWrapper(el) {
   _kbWrappers.push(el);
-  // Apply current shared position immediately so new wrapper aligns with existing ones.
-  // If this is the first wrapper registered for this render cycle, center it.
+  // Ensure the wrapper has explicit height matching the piano inside
+  const piano = el.querySelector('.piano');
+  if (piano) el.style.height = piano.style.height;
+  // Apply saved scroll position, or center if first time
   if (_kbWrappers.length === 1) {
-    requestAnimationFrame(() => syncKbScroll((el.scrollWidth - el.clientWidth) / 2));
+    requestAnimationFrame(() => {
+      if (_kbSavedScroll !== null) {
+        syncKbScroll(_kbSavedScroll);
+      } else {
+        syncKbScroll((el.scrollWidth - el.clientWidth) / 2);
+      }
+    });
   } else {
     el.scrollLeft = _kbScrollX;
   }
 
-  // Touch drag — only fires when swiping the background (not a key).
-  let _t0 = null, _ts = 0;
+  // Touch drag — works even when starting on a key (distinguishes tap vs swipe).
+  let _t0 = null, _ts = 0, _isDrag = false;
   el.addEventListener('touchstart', e => {
-    if (e.target.closest('.wkey,.bkey')) return;
-    _t0 = e.touches[0].clientX; _ts = _kbScrollX;
-  }, { passive: true });
+    e.preventDefault();
+    _t0 = e.touches[0].clientX; _ts = _kbScrollX; _isDrag = false;
+    el.dataset.scrolling = '';
+  }, { passive: false });
   el.addEventListener('touchmove', e => {
     if (_t0 === null) return;
     e.preventDefault();
-    syncKbScroll(_ts + (_t0 - e.touches[0].clientX));
+    const dx = _t0 - e.touches[0].clientX;
+    if (!_isDrag && Math.abs(dx) < 10) return;  // dead zone
+    _isDrag = true;
+    el.dataset.scrolling = '1';
+    syncKbScroll(_ts + dx);
   }, { passive: false });
-  el.addEventListener('touchend', () => { _t0 = null; }, { passive: true });
-  el.addEventListener('touchcancel', () => { _t0 = null; }, { passive: true });
+  el.addEventListener('touchend', () => { _t0 = null; _isDrag = false; el.dataset.scrolling = ''; }, { passive: true });
+  el.addEventListener('touchcancel', () => { _t0 = null; _isDrag = false; el.dataset.scrolling = ''; }, { passive: true });
 
   // Mouse drag (desktop).
   el.addEventListener('mousedown', e => {
@@ -231,8 +247,8 @@ function render() {
   if      (G.phase===1) rLearn();
   else if (G.phase===2) rIdentify();
   else if (G.phase===3) rPlace();
-  else if (G.phase===4) rListen();
-  else if (G.phase===5) rPlay();
+  else if (G.phase===4) rPlay();
+  else if (G.phase===5) rListen();
 }
 
 // ── PHASE 1 — LEARN ──
@@ -370,13 +386,13 @@ function hPlace(chosen) {
   }
 }
 
-// ── PHASE 4 — LISTEN ──
+// ── PHASE 5 — LISTEN ──
 function rListen() {
   if(!G.cur||G.ans){game.pickNew();game.buildSOpts();}
   stampQuestion();
   const note=G.cur, n=nd(note);
   const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
-  card.innerHTML=`<div class="ptag">Fase 4 — Ouça e identifique</div>
+  card.innerHTML=`<div class="ptag">Fase 5 — Ouça e identifique</div>
     <div class="play-row">
       <button class="btn" id="listen-play">♩ Tocar nota</button>
     </div>
@@ -398,13 +414,13 @@ function rListen() {
   setTimeout(()=>playNote(n.f,1.2),300);
 }
 
-// ── PHASE 5 — PIANO ──
+// ── PHASE 4 — PIANO ──
 function rPlay() {
   if(!G.cur||G.ans) game.pickNew();
   stampQuestion();
   const note=G.cur, n=nd(note), active=game.ga();
   const card=document.createElement('div'); card.className='panel pop-in piano-card'; card.id='acard';
-  card.innerHTML=`<div class="ptag">Fase 5 — Toque no teclado</div>
+  card.innerHTML=`<div class="ptag">Fase 4 — Toque no teclado</div>
     <div class="play-row">
       <button class="btn" id="play-play">♩ Tocar nota</button>
     </div>
@@ -414,7 +430,7 @@ function rPlay() {
   ct.appendChild(card);
   document.getElementById('play-play').addEventListener('click',()=>playNote(n.f,1.2));
   let pendingKey=null;
-  const answerWrap=buildPiano(active,(cid,btn)=>{
+  const answerWrap=buildRefPiano(active, game.gn(), (cid,btn)=>{
     pendingKey=cid;
     card.querySelectorAll('.wkey').forEach(k=>k.classList.remove('selected-key'));
     btn.classList.add('selected-key');
@@ -468,7 +484,7 @@ function hId(chosen) {
   document.querySelectorAll('.btn-option').forEach(b=>b.disabled=true);
   document.getElementById('ob-'+cor)?.classList.add('correct');
   const fb=document.getElementById('fb');
-  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';if(G.phase!==4)playNote(nd(cor).f,.8);onOk();
+  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';if(G.phase!==5)playNote(nd(cor).f,.8);onOk();
       jOkChord(nd(cor).f); lightning(); updateComboDisplay();
       const {sfp}=game.S(); const rd=reactionDelay();
       if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
@@ -500,13 +516,168 @@ function hPiano(chosen,btn) {
 }
 
 // ══════════════════════════════════════════════
+//  ONBOARDING FLOW
+// ══════════════════════════════════════════════
+let _obNotes = 3;
+
+function startOnboarding() {
+  document.getElementById('intro-main').style.display = 'none';
+  document.getElementById('game-page').classList.add('show');
+  window.scrollTo(0, 0);
+  _obNotes = +document.getElementById('sni').value;
+  obStep1();
+}
+
+function getObRange() {
+  if (_obNotes <= 10) return 'basic';
+  if (_obNotes <= 13) return 'extended';
+  return 'full';
+}
+
+function updateObPiano() {
+  const el = document.getElementById('ob-piano');
+  if (!el) return;
+  el.innerHTML = '';
+  resetKbScroll();
+  const allNotes = NS[getObRange()];
+  const active = allNotes.slice(0, Math.min(_obNotes, allNotes.length));
+  const wrap = buildRefPiano(active, allNotes);
+  el.appendChild(wrap);
+  registerKbWrapper(wrap);
+}
+
+function adjustObNotes(delta) {
+  _obNotes = Math.max(1, Math.min(19, _obNotes + delta));
+  const el = document.getElementById('ob-count');
+  if (el) el.textContent = _obNotes + (_obNotes === 1 ? ' nota' : ' notas');
+  updateObPiano();
+}
+
+function applyObNotes() {
+  const snr = document.getElementById('snr');
+  const sni = document.getElementById('sni');
+  if (_obNotes <= 10) { snr.value = 1; sni.max = 10; }
+  else if (_obNotes <= 13) { snr.value = 2; sni.max = 13; }
+  else { snr.value = 3; sni.max = 19; }
+  sni.value = _obNotes;
+  document.getElementById('sni-v').textContent = _obNotes;
+  const NR_LABELS = ['básica','estendida','completa'];
+  document.getElementById('snr-v').textContent = NR_LABELS[+snr.value - 1];
+}
+
+function setPhaseChecked(phId, checked) {
+  const cb = document.getElementById(phId);
+  if (cb) cb.checked = checked;
+  const row = document.getElementById('row-' + phId);
+  if (row) {
+    if (checked) row.classList.remove('off');
+    else row.classList.add('off');
+  }
+}
+
+function obStep1() {
+  ct.innerHTML = '';
+  resetKbScroll();
+  const card = document.createElement('div');
+  card.className = 'panel pop-in piano-card';
+  card.innerHTML = `
+    <div class="ob-question">O quê você quer treinar hoje?</div>
+    <div class="ob-note-count" id="ob-count">${_obNotes} nota${_obNotes === 1 ? '' : 's'}</div>
+    <div class="ob-adj-row">
+      <button class="btn btn-ghost ob-adj" id="ob-m8">&minus;8</button>
+      <button class="btn btn-ghost ob-adj" id="ob-m1">&minus;1</button>
+      <button class="btn btn-ghost ob-adj" id="ob-p1">+1</button>
+      <button class="btn btn-ghost ob-adj" id="ob-p8">+8</button>
+    </div>
+    <div id="ob-piano"></div>
+    <button class="btn" id="ob-next1">Próximo</button>
+  `;
+  ct.appendChild(card);
+  updateObPiano();
+  document.getElementById('ob-m8').addEventListener('click', () => adjustObNotes(-8));
+  document.getElementById('ob-m1').addEventListener('click', () => adjustObNotes(-1));
+  document.getElementById('ob-p1').addEventListener('click', () => adjustObNotes(1));
+  document.getElementById('ob-p8').addEventListener('click', () => adjustObNotes(8));
+  document.getElementById('ob-next1').addEventListener('click', () => { applyObNotes(); obStep2(); });
+}
+
+function obStep2() {
+  ct.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-question">Você quer treinar os ouvidos também?</div>
+    <button class="btn" id="ob-ears-yes">Sim</button>
+    <button class="btn btn-ghost" id="ob-ears-no">Não</button>
+  `;
+  ct.appendChild(card);
+  document.getElementById('ob-ears-yes').addEventListener('click', () => {
+    setPhaseChecked('ph4', true);
+    obStepRef();
+  });
+  document.getElementById('ob-ears-no').addEventListener('click', () => {
+    setPhaseChecked('ph4', false);
+    setPhaseChecked('ph5', false);
+    obStepIntro();
+  });
+}
+
+function obStepRef() {
+  ct.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-question">Você também quer treinar de ouvido?</div>
+    <button class="btn" id="ob-ref-yes">Sim</button>
+    <button class="btn btn-ghost" id="ob-ref-no">Não</button>
+  `;
+  ct.appendChild(card);
+  document.getElementById('ob-ref-yes').addEventListener('click', () => {
+    setPhaseChecked('ph5', true);
+    obStepIntro();
+  });
+  document.getElementById('ob-ref-no').addEventListener('click', () => {
+    setPhaseChecked('ph5', false);
+    obStepIntro();
+  });
+}
+
+function obStepIntro() {
+  ct.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-question">Você quer ser apresentado as notas?</div>
+    <button class="btn" id="ob-intro-yes">Sim</button>
+    <button class="btn btn-ghost" id="ob-intro-no">Não</button>
+  `;
+  ct.appendChild(card);
+  document.getElementById('ob-intro-yes').addEventListener('click', () => { setPhaseChecked('ph1', true); obStepStaff(); });
+  document.getElementById('ob-intro-no').addEventListener('click', () => { setPhaseChecked('ph1', false); obStepStaff(); });
+}
+
+function obStepStaff() {
+  ct.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-question">Você quer treinar também a pauta?</div>
+    <button class="btn" id="ob-staff-yes">Sim</button>
+    <button class="btn btn-ghost" id="ob-staff-no">Não</button>
+  `;
+  ct.appendChild(card);
+  document.getElementById('ob-staff-yes').addEventListener('click', () => { setPhaseChecked('ph2', true); setPhaseChecked('ph3', true); startGame(false); });
+  document.getElementById('ob-staff-no').addEventListener('click', () => { setPhaseChecked('ph2', false); setPhaseChecked('ph3', false); startGame(false); });
+}
+
+// ══════════════════════════════════════════════
 //  START & INITIALIZATION
 // ══════════════════════════════════════════════
 // keepUnlocked=true: auto-restart after loss (preserve note count + sessionIntroduced)
 // keepUnlocked=false: fresh start from menu (reset note count, clear sessionIntroduced)
 function startGame(keepUnlocked = false) {
   const prevUnlocked = keepUnlocked ? (G.unlocked || 0) : 0;
-  if (!keepUnlocked) sessionIntroduced.clear();
+  if (!keepUnlocked) { sessionIntroduced.clear(); _kbSavedScroll = null; }
   game.startGame();
   if (prevUnlocked > G.unlocked) G.unlocked = prevUnlocked;
   render();
@@ -514,7 +685,13 @@ function startGame(keepUnlocked = false) {
 
 // hook UI controls loaded from HTML
 function initUI() {
-  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('start-btn').addEventListener('click', () => { unlockAudio(); startOnboarding(); });
+  document.getElementById('skip-ob-btn').addEventListener('click', () => { unlockAudio(); startGame(false); });
+
+  // Unlock audio on any first interaction (covers play-again etc.)
+  const _unlockOnce = () => { unlockAudio(); document.removeEventListener('click', _unlockOnce); document.removeEventListener('touchstart', _unlockOnce); };
+  document.addEventListener('click', _unlockOnce);
+  document.addEventListener('touchstart', _unlockOnce);
 
   // sliders
   const sfp = document.getElementById('sfp');

@@ -301,7 +301,7 @@ function getTimerDuration() {
 function startComboTimer() {
   stopComboTimer();
   const dur = getTimerDuration();
-  if (dur <= 0 || G.combo === 0) { hideTimerBar(); return; }
+  if (dur <= 0) { hideTimerBar(); return; }
   _comboTimerStart = Date.now();
   showTimerBar();
   // Animate the bar
@@ -355,14 +355,17 @@ function updateTimerBar(frac) {
 const ct = document.getElementById('ct');
 let _questionStart = 0;
 let _selectionTime = 0;
+let _freshStart = true; // true until player makes first input after startGame()
 function stampQuestion() {
   _questionStart = Date.now(); _selectionTime = 0;
-  // Always wait for first player input before starting the timer
-  _timerArmed = true;
+  // Phase 6 always waits; fresh start (just restarted) waits for first input;
+  // active mid-game combo questions: start timer immediately.
+  if (G.phase === 6 || _freshStart) { _timerArmed = true; }
+  else { _timerArmed = false; startComboTimer(); }
 }
 function stampSelection() {
   _selectionTime = Date.now();
-  // Start the combo timer on the first player action, not on question appear
+  _freshStart = false; // player is now active
   if (_timerArmed) { _timerArmed = false; startComboTimer(); }
 }
 let _timerArmed = false;
@@ -463,11 +466,13 @@ function rLearn() {
 function rIdentify() {
   if (!G.cur||G.ans) game.pickNew();
   stampQuestion();
+  const validSps = game.ga().map(nid => nd(nid).s + 5);
+  const rangeMinSp = Math.min(...validSps), rangeMaxSp = Math.max(...validSps);
   const distractorCount = Math.min(2, game.ga().length - 1);
   const note = G.cur, dist = game.getDistractors([note], distractorCount), ch = shuf([note,...dist]);
   const card = document.createElement('div'); card.className='panel pop-in'; card.id='acard';
   card.innerHTML=`<div class="ptag">Fase 2 — Qual é esta nota?</div>
-    <div class="staffw" id="sd">${buildStaff({showNote:note})}</div>
+    <div class="staffw" id="sd">${buildStaff({showNote:note, rangeMinSp, rangeMaxSp})}</div>
     <div class="opts">${ch.map(nid=>`<button class="btn-option" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
     <div id="fb"></div>`;
   ct.appendChild(card);
@@ -499,13 +504,15 @@ function rPlace() {
 }
 
 let _dragSp = null;
+let _dragMinSp = 0, _dragMaxSp = 8;
 function initDragStaff(note) {
   const staffEl=document.getElementById('drag-staff');
   const isTouchDevice='ontouchstart' in window||navigator.maxTouchPoints>0;
   const validSps = game.ga().map(nid=>nd(nid).s+5);
   const minSp=Math.min(...validSps), maxSp=Math.max(...validSps);
+  _dragMinSp = minSp; _dragMaxSp = maxSp;
   _dragSp = validSps[Math.floor(validSps.length/2)];
-  function renderDrag(ghostSp=null,revealId=null){staffEl.innerHTML=buildStaffDrag(_dragSp,revealId,ghostSp);}
+  function renderDrag(ghostSp=null,revealId=null){staffEl.innerHTML=buildStaffDrag(_dragSp,revealId,ghostSp,minSp,maxSp);}
   if (isTouchDevice) {
     document.getElementById('drag-confirm').style.display='block';
     renderDrag();
@@ -518,7 +525,7 @@ function initDragStaff(note) {
   } else {
     let _hoverSp=null;
     renderDrag(null);
-    staffEl.addEventListener('mousemove',e=>{if(G.ans)return;const rect=staffEl.getBoundingClientRect();const scale=SH/rect.height;const svgY=(e.clientY-rect.top)*scale;const rawSp=(BY-svgY)/(LS/2);const snapped=validSps.reduce((b,v)=>Math.abs(v-rawSp)<Math.abs(b-rawSp)?v:b,validSps[0]);if(snapped!==_hoverSp){_hoverSp=snapped;_dragSp=snapped;renderDrag(_hoverSp);}});
+    staffEl.addEventListener('mousemove',e=>{if(G.ans)return;const svg=staffEl.querySelector('svg');if(!svg)return;const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const sp2=pt.matrixTransform(svg.getScreenCTM().inverse());const rawSp=(BY-sp2.y)/(LS/2);const snapped=validSps.reduce((b,v)=>Math.abs(v-rawSp)<Math.abs(b-rawSp)?v:b,validSps[0]);if(snapped!==_hoverSp){_hoverSp=snapped;_dragSp=snapped;renderDrag(_hoverSp);}});
     staffEl.addEventListener('mouseleave',()=>{if(G.ans)return;_hoverSp=null;renderDrag(null);});
     staffEl.addEventListener('click',e=>{if(G.ans||_hoverSp===null)return;stampSelection();const corSp=nd(G.cur).s+5;const chosen=_hoverSp===corSp?G.cur:game.ga().find(nid=>nd(nid).s+5===_hoverSp);if(chosen)hPlace(chosen);});
   }
@@ -528,13 +535,13 @@ function hPlaceDrag() {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur, corSp=nd(cor).s+5, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb'), confirmBtn=document.getElementById('drag-confirm');
   if(confirmBtn) confirmBtn.disabled=true;
-  if(_dragSp===corSp){staffEl.innerHTML=buildStaffDrag(_dragSp,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
+  if(_dragSp===corSp){staffEl.innerHTML=buildStaffDrag(_dragSp,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
     jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
     setTimeout(()=>{game.nextQ();render();},rd);
   }
-  else{staffEl.innerHTML=buildStaffDrag(_dragSp,cor);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
+  else{staffEl.innerHTML=buildStaffDrag(_dragSp,cor,null,_dragMinSp,_dragMaxSp);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
     jErrChord(nd(cor).f); updateComboDisplay();
     const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
     setTimeout(()=>renderGameOver(),800);
@@ -543,13 +550,13 @@ function hPlaceDrag() {
 function hPlace(chosen) {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb');
-  if(chosen===cor){staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
+  if(chosen===cor){staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
     jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
     setTimeout(()=>{game.nextQ();render();},rd);
   }
-  else{staffEl.innerHTML=buildStaffDrag(nd(chosen).s+5,cor,null);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
+  else{staffEl.innerHTML=buildStaffDrag(nd(chosen).s+5,cor,null,_dragMinSp,_dragMaxSp);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
     jErrChord(nd(cor).f); updateComboDisplay();
     const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
     setTimeout(()=>renderGameOver(),800);
@@ -737,7 +744,6 @@ function startCelebrationLightning() {
   const targetEl = document.querySelector('.score-show');
   if (!targetEl) return;
 
-  // Create ONE persistent canvas
   const cv = document.createElement('canvas');
   cv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999';
   cv.width = window.innerWidth; cv.height = window.innerHeight;
@@ -745,77 +751,113 @@ function startCelebrationLightning() {
   _celebrationCanvas = cv;
   const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
   const COLOR = '#FFFF5E';
+  const NUM_SNAKES = 5;
+  const BOLT_MS = 420;      // active bolt duration
+  const SPREAD_MS = 220;    // reveal phase
+  const LINGER_MS = 500;    // extra fade time for the ghost
 
-  let bolts = [];
-  let boltStartTimes = [];
-
-  function genCelebBolt() {
-    const rect = targetEl.getBoundingClientRect();
-    if (!rect.width) return null;
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const spreadW = rect.width * 1.5;
-    const spreadH = rect.height * 1.2;
-    const ox = cx + (Math.random() - 0.5) * spreadW;
-    const oy = cy + (Math.random() - 0.5) * spreadH;
-    const tx = cx + (Math.random() - 0.5) * spreadW;
-    const ty = cy + (Math.random() - 0.5) * spreadH;
-    const t = 0.4 + Math.random() * 0.4;
+  function genBolt(ox, oy, tx, ty) {
+    const t = 0.5 + Math.random() * 0.5;
     const stepBase = 0.03 + t * 0.17;
-    const stepCount = Math.round(5 + t * 15);
+    const stepCount = Math.round(8 + t * 14);
     const base = Math.min(W, H) * stepBase;
-    const pts = [{x: ox, y: oy, rays: []}];
+    const pts = [{x: ox, y: oy}];
     let bx = ox, by = oy;
-    let ang = Math.atan2(ty - oy, tx - ox) + (Math.random() - 0.5) * 0.3;
+    let ang = Math.atan2(ty - oy, tx - ox) + (Math.random() - 0.5) * 0.4;
     for (let i = 0; i < stepCount; i++) {
       const dist = Math.hypot(tx - bx, ty - by);
-      if (dist < base * 1.5) { pts.push({x: tx, y: ty, rays: []}); break; }
+      if (dist < base * 1.5) { pts.push({x: tx, y: ty}); break; }
       const toTarget = Math.atan2(ty - by, tx - bx);
-      ang = ang + (toTarget - ang) * 0.5 + (Math.random() - 0.5) * 0.8;
-      bx += Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
-      by += Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
-      pts.push({x: bx, y: by, rays: []});
+      ang = ang + (toTarget - ang) * 0.45 + (Math.random() - 0.5) * 0.9;
+      let nx = bx + Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
+      let ny = by + Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
+      if (nx < 0) { nx = 0; ang = Math.PI - ang; }
+      if (nx > W) { nx = W; ang = Math.PI - ang; }
+      if (ny < 0) { ny = 0; ang = -ang; }
+      if (ny > H) { ny = H; ang = -ang; }
+      pts.push({x: nx, y: ny});
+      bx = nx; by = ny;
     }
-    return { pts, t };
+    return { pts, t, startTime: performance.now() };
   }
 
-  const BOLT_MS = 320;
-  const SPREAD_MS = 200;
-
-  function spawnBolt() {
-    if (!_celebrationCanvas) return;
-    const b = genCelebBolt();
-    if (b) { bolts.push(b); boltStartTimes.push(performance.now()); }
-    _celebrationTimer = setTimeout(spawnBolt, 50 + Math.random() * 30);
+  function randomScorePoint() {
+    const rect = targetEl.getBoundingClientRect();
+    if (!rect.width) return { x: W / 2, y: H / 2 };
+    return {
+      x: rect.left + Math.random() * rect.width,
+      y: rect.top  + Math.random() * rect.height
+    };
   }
+
+  function drawBoltAt(pts, t, alpha) {
+    if (pts.length < 2) return;
+    const glowW = 0.5 + t * 1.5, coreW = 0.3 + t * 0.5;
+    const glowB = 4 + t * 10,    coreB = 0.5 + t * 3;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = COLOR; ctx.shadowColor = COLOR;
+    ctx.lineWidth = glowW; ctx.shadowBlur = glowB;
+    ctx.beginPath(); pts.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+    ctx.lineWidth = coreW; ctx.shadowBlur = coreB;
+    ctx.beginPath(); pts.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+  }
+
+  // Stagger snake start times so they march one after another
+  const snakes = Array.from({length: NUM_SNAKES}, (_, i) => {
+    const offset = (BOLT_MS / NUM_SNAKES) * i;
+    const from = randomScorePoint();
+    const to   = randomScorePoint();
+    const bolt = genBolt(from.x, from.y, to.x, to.y);
+    bolt.startTime = performance.now() + offset; // delayed start
+    return {
+      bolt,
+      headX: to.x, headY: to.y,
+      ghost: null  // previous bolt kept for fading
+    };
+  });
 
   function tick(now) {
     if (!_celebrationCanvas) return;
     ctx.clearRect(0, 0, W, H);
-    // Draw and age bolts
-    for (let i = bolts.length - 1; i >= 0; i--) {
-      const elapsed = now - boltStartTimes[i];
-      if (elapsed >= BOLT_MS) { bolts.splice(i, 1); boltStartTimes.splice(i, 1); continue; }
+
+    for (const snake of snakes) {
+      const { bolt, ghost } = snake;
+      const elapsed = now - bolt.startTime;
+
+      // Draw ghost (lingering previous bolt)
+      if (ghost) {
+        const ge = now - ghost.endTime;
+        if (ge < LINGER_MS) {
+          const ghostAlpha = 0.35 * Math.max(0, 1 - ge / LINGER_MS);
+          drawBoltAt(ghost.pts, ghost.t, ghostAlpha);
+        }
+      }
+
+      // Not started yet (stagger delay)
+      if (elapsed < 0) continue;
+
+      if (elapsed >= BOLT_MS) {
+        // Bolt finished — promote to ghost, spawn next
+        snake.ghost = { pts: bolt.pts, t: bolt.t, endTime: now };
+        const from = { x: snake.headX, y: snake.headY };
+        const to   = randomScorePoint();
+        snake.headX = to.x; snake.headY = to.y;
+        snake.bolt  = genBolt(from.x, from.y, to.x, to.y);
+        continue;
+      }
+
+      // Active bolt — progressive reveal then fade
       const reveal = Math.min(1, elapsed / SPREAD_MS);
       let alpha = 1;
       if (elapsed > SPREAD_MS) alpha = Math.max(0, 1 - (elapsed - SPREAD_MS) / (BOLT_MS - SPREAD_MS));
-      const { pts, t } = bolts[i];
-      const glowW = 0.5 + t * 1.5, coreW = 0.3 + t * 0.5;
-      const glowB = 2 + t * 8, coreB = 0.5 + t * 2.5;
-      const n = Math.max(2, Math.ceil(pts.length * reveal));
-      const vis = pts.slice(0, n);
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = COLOR; ctx.shadowColor = COLOR;
-      ctx.lineWidth = glowW; ctx.shadowBlur = glowB;
-      ctx.beginPath(); vis.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
-      ctx.lineWidth = coreW; ctx.shadowBlur = coreB;
-      ctx.beginPath(); vis.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+      const n = Math.max(2, Math.ceil(bolt.pts.length * reveal));
+      drawBoltAt(bolt.pts.slice(0, n), bolt.t, alpha);
     }
+
     ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     _celebrationRaf = requestAnimationFrame(tick);
   }
 
-  spawnBolt();
   _celebrationRaf = requestAnimationFrame(tick);
 }
 
@@ -1184,6 +1226,7 @@ function obStep5() {
 function startGame(keepUnlocked = false) {
   const prevUnlocked = keepUnlocked ? (G.unlocked || 0) : 0;
   if (!keepUnlocked) { sessionIntroduced.clear(); _kbSavedScroll = null; }
+  _freshStart = true; // wait for first input before starting timer
   game.startGame();
   if (prevUnlocked > G.unlocked) G.unlocked = prevUnlocked;
   render();

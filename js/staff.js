@@ -4,10 +4,16 @@ import {nd} from './constants.js';
 // convert staff position to Y coordinate
 export function NY(sp) { return BY - sp * (LS / 2); }
 
-export function buildStaff({showNote = null, interactive = false, revealNote = null} = {}) {
+export function buildStaff({showNote = null, interactive = false, revealNote = null, rangeMinSp = 0, rangeMaxSp = 8} = {}) {
   const PL = 98, PR = 27;
-  // Compute dynamic viewBox to accommodate extreme notes
+  // ViewBox fixed to the full note range — prevents layout shifts
   let vbTop = 0, vbBottom = SH;
+  [rangeMinSp, rangeMaxSp].forEach(sp => {
+    const ny = NY(sp);
+    vbTop = Math.min(vbTop, ny - 90);
+    vbBottom = Math.max(vbBottom, ny + 90);
+  });
+  // Also ensure the shown note is visible
   [showNote, revealNote].filter(Boolean).forEach(id => {
     const sp = nd(id).s + 5;
     const ny = NY(sp);
@@ -16,10 +22,18 @@ export function buildStaff({showNote = null, interactive = false, revealNote = n
   });
   let s = `<svg class="ssvg" viewBox="0 ${vbTop} ${SW} ${vbBottom - vbTop}" xmlns="http://www.w3.org/2000/svg">`;
   const gc = 'rgba(255,255,255,0.22)', gx1 = PL, gx2 = SW - PR;
-  for (let sp = -2; sp >= -22; sp -= 2)
-    s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
-  for (let sp = 10; sp <= 20; sp += 2)
-    s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  // Bottom guide lines — only draw down to lowest note in range
+  if (rangeMinSp < 0) {
+    const bottomLimit = rangeMinSp % 2 === 0 ? rangeMinSp : rangeMinSp - 1;
+    for (let sp = -2; sp >= bottomLimit; sp -= 2)
+      s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  }
+  // Top guide lines — only draw up to highest note in range
+  if (rangeMaxSp > 8) {
+    const topLimit = rangeMaxSp % 2 === 0 ? rangeMaxSp : rangeMaxSp + 1;
+    for (let sp = 10; sp <= topLimit; sp += 2)
+      s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  }
   for (let i = 0; i < 5; i++) {
     const y = NY(i * 2);
     s += `<line x1="${PL}" y1="${y}" x2="${SW-PR}" y2="${y}" stroke="#FFFFFF" stroke-width="2.7"/>`;
@@ -63,21 +77,35 @@ export function buildStaff({showNote = null, interactive = false, revealNote = n
 // require access to ga() and other game helpers. to keep dependencies low we
 // export helper constructors and let the caller wire them up.
 
-export function buildStaffDrag(dragSp, revealId = null, ghostSp = null) {
+export function buildStaffDrag(dragSp, revealId = null, ghostSp = null, rangeMinSp = 0, rangeMaxSp = 8) {
   const PL = 98, PR = 27;
-  // Compute dynamic viewBox
+  // ViewBox fixed to the full note range — prevents layout shifts while dragging
   let vbTop = 0, vbBottom = SH;
-  const sps = [dragSp, ghostSp].filter(v => v !== null);
-  if (revealId) sps.push(nd(revealId).s + 5);
-  sps.forEach(sp => {
+  [rangeMinSp, rangeMaxSp].forEach(sp => {
     const ny = NY(sp);
     vbTop = Math.min(vbTop, ny - 90);
     vbBottom = Math.max(vbBottom, ny + 90);
   });
+  if (revealId) {
+    const sp = nd(revealId).s + 5;
+    const ny = NY(sp);
+    vbTop = Math.min(vbTop, ny - 90);
+    vbBottom = Math.max(vbBottom, ny + 90);
+  }
   let s = `<svg class="ssvg" viewBox="0 ${vbTop} ${SW} ${vbBottom - vbTop}" xmlns="http://www.w3.org/2000/svg" style="cursor:${revealId===null?'crosshair':'default'}">`;
   const gc = 'rgba(255,255,255,0.22)', gx1 = PL, gx2 = SW - PR;
-  for (let sp = -2; sp >= -22; sp -= 2) s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
-  for (let sp = 10; sp <= 20; sp += 2) s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  // Bottom guide lines — only draw down to the lowest note in range
+  if (rangeMinSp < 0) {
+    const bottomLimit = rangeMinSp % 2 === 0 ? rangeMinSp : rangeMinSp - 1;
+    for (let sp = -2; sp >= bottomLimit; sp -= 2)
+      s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  }
+  // Top guide lines — only draw up to the highest note in range
+  if (rangeMaxSp > 8) {
+    const topLimit = rangeMaxSp % 2 === 0 ? rangeMaxSp : rangeMaxSp + 1;
+    for (let sp = 10; sp <= topLimit; sp += 2)
+      s += `<line x1="${gx1}" y1="${NY(sp)}" x2="${gx2}" y2="${NY(sp)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  }
   for (let i = 0; i < 5; i++) { const y = NY(i*2); s += `<line x1="${PL}" y1="${y}" x2="${SW-PR}" y2="${y}" stroke="#FFFFFF" stroke-width="2.7"/>`; }
   const cfs = LS * 5.4, cy2 = BY - LS * 0.08;
   s += `<text x="14" y="${cy2}" font-size="${cfs}" fill="#FFFF5E" font-family="Georgia,serif" opacity=".7">&#x1D11E;</text>`;

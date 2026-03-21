@@ -11,7 +11,11 @@ export let G = {
   li: 0,
   pendingUnlock: false,
   _lastCombo: 0,
-  lastNote: null
+  lastNote: null,
+  scaleIdx: 0,
+  scaleDir: 1,
+  scalePrev: null,
+  scaleTarget: []
 };
 
 let _answerLock = false;

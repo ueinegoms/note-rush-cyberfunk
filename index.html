@@ -65,7 +65,7 @@
   <div class="sr">
     <div class="sr-label">
       <span>dificuldade (timer)</span>
-      <span class="sr-val" id="sdif-v">tranquilo (5s)</span>
+      <span class="sr-val" id="sdif-v">tranquilo (6s)</span>
     </div>
     <input type="range" id="sdif" min="1" max="5" value="1" step="1">
   </div>
@@ -73,9 +73,9 @@
   <div class="sr">
     <div class="sr-label">
       <span>acertos p/ avançar</span>
-      <span class="sr-val" id="sfp-v">5</span>
+      <span class="sr-val" id="sfp-v">3</span>
     </div>
-    <input type="range" id="sfp" min="2" max="12" value="5">
+    <input type="range" id="sfp" min="2" max="12" value="3">
   </div>
 
   <div class="sr">
@@ -83,15 +83,23 @@
       <span>quantidade de notas</span>
       <span class="sr-val" id="sni-v">3</span>
     </div>
-    <input type="range" id="sni" min="1" max="13" value="3">
+    <input type="range" id="sni" min="1" max="8" value="3">
   </div>
 
   <div class="sr">
     <div class="sr-label">
       <span>escala</span>
-      <span class="sr-val" id="snr-v">estendida</span>
+      <span class="sr-val" id="snr-v">Maior</span>
     </div>
-    <input type="range" id="snr" min="1" max="3" value="2" step="1">
+    <input type="range" id="snr" min="1" max="8" value="1" step="1">
+  </div>
+
+  <div class="sr">
+    <div class="sr-label">
+      <span>oitavas</span>
+      <span class="sr-val" id="soct-v">5</span>
+    </div>
+    <input type="range" id="soct" min="1" max="5" value="5" step="1">
   </div>
 
   <label class="btn ptoggle-row" id="row-ph1" data-phase="ph1">
@@ -126,10 +134,18 @@
     </label>
   </label>
 
-  <label class="btn ptoggle-row" id="row-ph5" data-phase="ph5">
+  <label class="btn ptoggle-row off" id="row-ph5" data-phase="ph5">
     <span class="ptoggle-label">ouvir</span>
     <label class="toggle-sw">
-      <input type="checkbox" id="ph5" checked>
+      <input type="checkbox" id="ph5">
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </label>
+  </label>
+
+  <label class="btn ptoggle-row off" id="row-ph6" data-phase="ph6">
+    <span class="ptoggle-label">escala</span>
+    <label class="toggle-sw">
+      <input type="checkbox" id="ph6">
       <div class="toggle-track"><div class="toggle-thumb"></div></div>
     </label>
   </label>

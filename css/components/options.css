@@ -7,3 +7,106 @@
   gap: 0.5rem; 
   flex-wrap: wrap; 
 }
+
+/* ── SCALE DRILL TRAIL ── */
+.scale-trail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.scale-trail-note {
+  color: var(--plus2);
+}
+
+.scale-trail-arrow {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+}
+
+.scale-trail-q {
+  color: var(--err);
+  font-size: 1.3rem;
+  animation: pulse-q 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-q {
+  from { opacity: 0.5; }
+  to   { opacity: 1; }
+}
+
+/* ── SCALE BUILDER UI ── */
+.scale-target-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 0.3rem;
+}
+
+.scale-target-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.scale-target-notes {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--plus2);
+  letter-spacing: 0.06em;
+}
+
+.scale-built-grid {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.5rem 0.4rem;
+  margin: 0.3rem 0;
+  width: 100%;
+}
+
+.scale-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.8rem;
+  height: 2.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 94, 0.2);
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.scale-slot.empty {
+  background: rgba(255, 255, 94, 0.04);
+  color: transparent;
+}
+
+.scale-slot.filled {
+  background: rgba(255, 255, 94, 0.15);
+  color: #fff;
+}
+
+.scale-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.3rem;
+}
+
+.scale-actions .btn,
+.scale-actions .btn-ghost {
+  width: 100%;
+}

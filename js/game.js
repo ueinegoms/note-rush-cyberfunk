@@ -1,17 +1,18 @@
-import {NS, nd, AN} from './constants.js';
+import {SCALE_TYPES, buildScale, nd, AN} from './constants.js';
 import {shuf} from './utils.js';
 import {G, lockAnswer, unlockAnswer} from './state.js';
 
-// phases utilities
+// phases utilities — ordered by difficulty
+const PHASE_ORDER = [1,2,3,4,5,6];
 export function getActivePhases() {
   const res = [];
-  for (let i = 1; i <= 5; i++) {
-    const el = document.getElementById('ph' + i);
-    if (el && el.checked) res.push(i);
+  for (const ph of PHASE_ORDER) {
+    const el = document.getElementById('ph' + ph);
+    if (el && el.checked) res.push(ph);
   }
-  return res.length > 0 ? res : [1,2,3,4,5];
+  return res.length > 0 ? res : PHASE_ORDER;
 }
-const PHASE_BONUS = [0,1,2,3,4,5];
+const PHASE_BONUS = {1:1, 2:2, 3:3, 4:4, 5:5, 6:10};
 export function nextActivePhase(current) {
   const phases = getActivePhases();
   const idx = phases.indexOf(current);
@@ -20,21 +21,19 @@ export function nextActivePhase(current) {
 }
 export function firstActivePhase() { return getActivePhases()[0]; }
 
-// note sets depending on unlock state
-const NR_NAMES = ['basic','extended','full'];
+// note sets depending on selected scale type + octaves
 export function gn() {
-  const el = document.getElementById('snr');
-  const idx = el ? Math.max(0, Math.min(2, (+el.value) - 1)) : 1;
-  return NS[NR_NAMES[idx]];
+  const snr = document.getElementById('snr');
+  const soct = document.getElementById('soct');
+  const typeIdx = snr ? Math.max(0, Math.min(SCALE_TYPES.length - 1, (+snr.value) - 1)) : 0;
+  const octaves = soct ? Math.max(1, Math.min(5, +soct.value)) : 1;
+  return buildScale(typeIdx, octaves);
 }
 export function ga() { return gn().slice(0, Math.min(G.unlocked, gn().length)); }
 
 export function getDistractors(exclude, count) {
-  const all = gn(), active = ga();
-  const upcoming = all.slice(active.length, active.length + 3);
-  const pool = [...active, ...upcoming].filter(x => !exclude.includes(x));
-  const extra = AN.map(n=>n.id).filter(x=>!exclude.includes(x)&&!pool.includes(x));
-  return shuf([...pool, ...extra]).slice(0, count);
+  const pool = ga().filter(x => !exclude.includes(x));
+  return shuf(pool).slice(0, count);
 }
 
 export function buildSOpts() {
@@ -67,6 +66,9 @@ export function startGame() {
   G.pendingUnlock = false;
   G._lastCombo = 0;
   G.lastNote = null;
+  G.scaleIdx = 0;
+  G.scaleDir = 1;
+  G.scaleTarget = [];
   // the caller should trigger a render
 }
 
@@ -96,28 +98,12 @@ export function goNextPhase(current) {
 }
 
 export function advanceNote() {
-  let allN = gn();
-  // Auto-promote to the next scale tier when all notes in the current one are unlocked
-  if (G.unlocked >= allN.length) {
-    const snr = document.getElementById('snr');
-    const curIdx = Math.max(0, Math.min(2, (+snr.value) - 1));
-    if (curIdx < 2) {
-      snr.value = curIdx + 2;
-      const NR_LABELS = ['básica','estendida','completa'];
-      const snrV = document.getElementById('snr-v');
-      if (snrV) snrV.textContent = NR_LABELS[curIdx + 1];
-      // Update slider max for new scale
-      const sni = document.getElementById('sni');
-      if (sni) sni.max = [10, 13, 19][curIdx + 1];
-      allN = gn();
-    }
-  }
+  const allN = gn();
   if (G.unlocked < allN.length) {
     G.unlocked++;
     G.streak = 0;
     G.pendingUnlock = true;
     G.li = G.unlocked - 1;
-    // Phase will be set after a short delay (unlock banner display)
     setTimeout(() => {
       G.phase = firstActivePhase();
       G.cur = null;
@@ -125,14 +111,31 @@ export function advanceNote() {
       G.pendingUnlock = false;
     }, 800);
   } else {
+    // All notes unlocked (5-octave ceiling) — loop phases
     G.streak = 0;
-    // All notes unlocked across all scales
+    G.phase = firstActivePhase();
+    G.cur = null;
+    G.ans = false;
   }
 }
 
 export function nextQ() { G.cur = null; G.ans = false; }
 
 export function shufArray(a) { return shuf(a); } // alias if needed
+
+// ── SCALE DRILL helpers ──
+export function getScaleSequence() {
+  const notes = ga();
+  return [...notes].sort((a, b) => nd(a).f - nd(b).f);
+}
+
+export function pickScaleTarget() {
+  const seq = getScaleSequence();
+  // Target: ascending scale from active notes
+  G.scaleTarget = seq;
+  G.cur = seq[0] || null;
+  G.ans = false;
+}
 
 function comboLerp(ms, maxBonus) {
   const MIN_T = 1000, MAX_T = 5000;

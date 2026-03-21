@@ -35,7 +35,7 @@ export function buildRefPiano(active, allScale, onKey = null) {
       const n=nd(k.id);
       const lbEl=document.createElement('div');
       lbEl.className='wlbl';
-      lbEl.textContent=n.lb.replace(/(₃|₄|₅)/,'\n$1');
+      lbEl.textContent=n.lb.replace(/(₂|₃|₄|₅|₆|₇)/,'\n$1');
       btn.appendChild(lbEl);
     }
     if(k.id){
@@ -67,12 +67,24 @@ export function buildRefPiano(active, allScale, onKey = null) {
   range.filter(k=>k.isB).forEach(k=>{
     const lwi=whites.findIndex(w=>w.oct===k.oct&&w.pc===k.pc-1); if(lwi<0)return;
     const bx=lwi*(WW+GAP)+WW*.63;
+    const isActive = k.id && active.includes(k.id);
     const btn=document.createElement('div'); btn.className='bkey';
     btn.style.cssText=`left:${bx}px;top:0;width:${BW}px;height:${BH}px;`;
-    const rel=()=>{ btn.classList.remove('pressed'); };
-    btn.addEventListener('mousedown',()=>{playNote(k.f,.55); btn.classList.add('pressed');}); btn.addEventListener('mouseup',rel); btn.addEventListener('mouseleave',rel);
-    btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
-    btn.addEventListener('touchend',e=>{e.preventDefault(); rel(); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; playNote(k.f,.55);},{passive:false});
+    if (k.id && onKey && isActive) {
+      btn.dataset.note = k.id;
+      let _tapped = false;
+      btn.addEventListener('mousedown',()=>{playNote(k.f,.7); btn.classList.add('pressed');});
+      btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
+      btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
+      btn.addEventListener('click',()=>onKey(k.id,btn));
+      btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
+      btn.addEventListener('touchend',e=>{e.preventDefault(); btn.classList.remove('pressed'); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; if(!_tapped){_tapped=true; playNote(k.f,.7); onKey(k.id,btn); setTimeout(()=>_tapped=false,350);}},{passive:false});
+    } else {
+      const rel=()=>{ btn.classList.remove('pressed'); };
+      btn.addEventListener('mousedown',()=>{playNote(k.f,.55); btn.classList.add('pressed');}); btn.addEventListener('mouseup',rel); btn.addEventListener('mouseleave',rel);
+      btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
+      btn.addEventListener('touchend',e=>{e.preventDefault(); rel(); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; playNote(k.f,.55);},{passive:false});
+    }
     piano.appendChild(btn);
   });
 
@@ -82,6 +94,13 @@ export function buildRefPiano(active, allScale, onKey = null) {
 
 // supply chromatic data (private export but needed by reference builder)
 export const CHROMATIC = [
+  {id:'Dó2', pc:0, oct:2,isB:false,f:65.41},{id:null,pc:1, oct:2,isB:true, f:69.30},
+  {id:'Ré2', pc:2, oct:2,isB:false,f:73.42},{id:null,pc:3, oct:2,isB:true, f:77.78},
+  {id:'Mi2', pc:4, oct:2,isB:false,f:82.41},
+  {id:'Fá2', pc:5, oct:2,isB:false,f:87.31},{id:null,pc:6, oct:2,isB:true, f:92.50},
+  {id:'Sol2',pc:7, oct:2,isB:false,f:98.00},{id:null,pc:8, oct:2,isB:true, f:103.83},
+  {id:'Lá2', pc:9, oct:2,isB:false,f:110.00},{id:null,pc:10,oct:2,isB:true, f:116.54},
+  {id:'Si2', pc:11,oct:2,isB:false,f:123.47},
   {id:'Dó3', pc:0, oct:3,isB:false,f:130.81},{id:null,pc:1, oct:3,isB:true, f:138.59},
   {id:'Ré3', pc:2, oct:3,isB:false,f:146.83},{id:null,pc:3, oct:3,isB:true, f:155.56},
   {id:'Mi3', pc:4, oct:3,isB:false,f:164.81},
@@ -100,5 +119,19 @@ export const CHROMATIC = [
   {id:'Ré5', pc:2, oct:5,isB:false,f:587.33},{id:null,pc:3, oct:5,isB:true, f:622.25},
   {id:'Mi5', pc:4, oct:5,isB:false,f:659.25},
   {id:'Fá5', pc:5, oct:5,isB:false,f:698.46},{id:null,pc:6, oct:5,isB:true, f:739.99},
-  {id:'Sol5',pc:7, oct:5,isB:false,f:783.99},
+  {id:'Sol5',pc:7, oct:5,isB:false,f:783.99},{id:null,pc:8, oct:5,isB:true, f:830.61},
+  {id:'Lá5', pc:9, oct:5,isB:false,f:880.00},{id:null,pc:10,oct:5,isB:true, f:932.33},
+  {id:'Si5', pc:11,oct:5,isB:false,f:987.77},
+  {id:'Dó6', pc:0, oct:6,isB:false,f:1046.50},{id:null,pc:1, oct:6,isB:true, f:1108.73},
+  {id:'Ré6', pc:2, oct:6,isB:false,f:1174.66},{id:null,pc:3, oct:6,isB:true, f:1244.51},
+  {id:'Mi6', pc:4, oct:6,isB:false,f:1318.51},
+  {id:'Fá6', pc:5, oct:6,isB:false,f:1396.91},{id:null,pc:6, oct:6,isB:true, f:1479.98},
+  {id:'Sol6',pc:7, oct:6,isB:false,f:1567.98},{id:null,pc:8, oct:6,isB:true, f:1661.22},
+  {id:'Lá6', pc:9, oct:6,isB:false,f:1760.00},{id:null,pc:10,oct:6,isB:true, f:1864.66},
+  {id:'Si6', pc:11,oct:6,isB:false,f:1975.53},
+  {id:'Dó7', pc:0, oct:7,isB:false,f:2093.00},
 ];
+
+// Assign IDs to black keys (accidentals)
+const _PC_TO_NAME = {1:'Réb',3:'Mib',6:'Solb',8:'Láb',10:'Sib'};
+CHROMATIC.forEach(k => { if (k.isB && _PC_TO_NAME[k.pc]) k.id = _PC_TO_NAME[k.pc] + k.oct; });

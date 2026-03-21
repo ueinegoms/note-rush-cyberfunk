@@ -1,4 +1,4 @@
-import {LS,BY,SW,SH,NX,AN,NS,nd} from './constants.js';
+import {LS,BY,SW,SH,NX,AN,nd,SCALE_TYPES,buildScale,scaleName} from './constants.js';
 import {shuf} from './utils.js';
 import {playNote,jOkChord,jErrChord,unlockAudio} from './audio.js';
 import {G, lockAnswer, unlockAnswer} from './state.js';
@@ -291,10 +291,11 @@ let _comboTimerRaf = 0;
 let _comboTimerStart = 0;
 
 function getTimerDuration() {
-  // sdif slider: 1 = 5s, 2 = 4s, 3 = 3s, 4 = 2s, 5 = 1s
+  // sdif slider: 1 = 6s, 2 = 5s, 3 = 4s, 4 = 3s, 5 = 2s
   const el = document.getElementById('sdif');
   const v = el ? +el.value : 1;
-  return 6000 - v * 1000; // 1→5s, 2→4s, 3→3s, 4→2s, 5→1s
+  const base = 7000 - v * 1000; // 1→6s, 2→5s, 3→4s, 4→3s, 5→2s
+  return G.phase === 6 ? base + 10000 : base;
 }
 
 function startComboTimer() {
@@ -356,10 +357,8 @@ let _questionStart = 0;
 let _selectionTime = 0;
 function stampQuestion() {
   _questionStart = Date.now(); _selectionTime = 0;
-  // If the player already has a combo, start the timer immediately for the new question.
-  // Only defer (arm) for the very first question when combo is still 0.
-  if (G.combo > 0) { _timerArmed = false; startComboTimer(); }
-  else { _timerArmed = true; }
+  // Always wait for first player input before starting the timer
+  _timerArmed = true;
 }
 function stampSelection() {
   _selectionTime = Date.now();
@@ -416,6 +415,7 @@ function render() {
   else if (G.phase===3) rPlace();
   else if (G.phase===4) rPlay();
   else if (G.phase===5) rListen();
+  else if (G.phase===6) rScale();
 }
 
 // ── PHASE 1 — LEARN ──
@@ -520,7 +520,7 @@ function initDragStaff(note) {
     renderDrag(null);
     staffEl.addEventListener('mousemove',e=>{if(G.ans)return;const rect=staffEl.getBoundingClientRect();const scale=SH/rect.height;const svgY=(e.clientY-rect.top)*scale;const rawSp=(BY-svgY)/(LS/2);const snapped=validSps.reduce((b,v)=>Math.abs(v-rawSp)<Math.abs(b-rawSp)?v:b,validSps[0]);if(snapped!==_hoverSp){_hoverSp=snapped;_dragSp=snapped;renderDrag(_hoverSp);}});
     staffEl.addEventListener('mouseleave',()=>{if(G.ans)return;_hoverSp=null;renderDrag(null);});
-    staffEl.addEventListener('click',e=>{if(G.ans||_hoverSp===null)return;stampSelection();const chosen=game.ga().find(nid=>nd(nid).s+5===_hoverSp);if(chosen)hPlace(chosen);});
+    staffEl.addEventListener('click',e=>{if(G.ans||_hoverSp===null)return;stampSelection();const corSp=nd(G.cur).s+5;const chosen=_hoverSp===corSp?G.cur:game.ga().find(nid=>nd(nid).s+5===_hoverSp);if(chosen)hPlace(chosen);});
   }
 }
 
@@ -556,6 +556,114 @@ function hPlace(chosen) {
   }
 }
 
+// ── PHASE 6 — SCALE DRILL (piano builder) ──
+function rScale() {
+  // Random scale type each round, 1 octave for drill
+  const typeIdx = Math.floor(Math.random() * SCALE_TYPES.length);
+  const octaves = 1;
+  const drillNotes = buildScale(typeIdx, octaves);
+  // Pick a contiguous slice of G.unlocked notes from the full scale
+  const fullSeq = [...drillNotes].sort((a, b) => nd(a).f - nd(b).f);
+  const count = Math.min(G.unlocked, fullSeq.length);
+  const maxStart = fullSeq.length - count;
+  const start = Math.floor(Math.random() * (maxStart + 1));
+  const targetSeq = fullSeq.slice(start, start + count);
+  G.scaleTarget = targetSeq;
+  G.cur = targetSeq[0] || null;
+  G.ans = false;
+  stampQuestion();
+
+  const freqs = drillNotes.map(id => nd(id).f);
+  const minF = Math.min(...freqs), maxF = Math.max(...freqs);
+  const rangeIds = AN.filter(n => n.f >= minF * 0.97 && n.f <= maxF * 1.03).map(n => n.id);
+  const sName = scaleName(typeIdx, octaves);
+
+  const slotCount = targetSeq.length;
+  const card = document.createElement('div'); card.className = 'panel pop-in piano-card'; card.id = 'acard';
+  card.innerHTML = `<div class="ptag">Fase 6 — Monte a escala</div>
+    <button class="btn btn-ghost" id="scale-listen-target">OUVIR ESCALA ${sName.toUpperCase()}</button>
+    <div id="scale-built" class="scale-built-grid"></div>
+    <div id="pia"></div>
+    <div class="scale-actions">
+      <button class="btn" id="scale-confirm" disabled>✓ Confirmar</button>
+    </div>
+    <div id="fb"></div>`;
+  ct.appendChild(card);
+
+  const builtArr = [];
+  const builtEl = document.getElementById('scale-built');
+  const confirmBtn = document.getElementById('scale-confirm');
+
+  function renderBuilt() {
+    let html = '';
+    for (let i = 0; i < slotCount; i++) {
+      const id = builtArr[i];
+      html += id
+        ? `<span class="scale-slot filled">${nd(id).lB}</span>`
+        : `<span class="scale-slot empty"></span>`;
+    }
+    builtEl.innerHTML = html;
+    confirmBtn.disabled = builtArr.length < slotCount;
+  }
+  renderBuilt();
+
+  // Piano keyboard — show all notes in the scale's octave range (no highlighting clue)
+  const pianoWrap = buildRefPiano(rangeIds, rangeIds, (cid) => {
+    stampSelection();
+    if (builtArr.length >= slotCount) {
+      builtArr.shift(); // drop leftmost
+    }
+    builtArr.push(cid);
+    renderBuilt();
+  });
+  card.querySelector('#pia').appendChild(pianoWrap);
+  registerKbWrapper(pianoWrap);
+
+  // Listen to target scale
+  function playSeq(seq) {
+    const ms = Math.max(40, Math.round(1200 / seq.length));
+    seq.forEach((nid, i) => setTimeout(() => playNote(nd(nid).f, 0.6), i * ms));
+  }
+  document.getElementById('scale-listen-target').addEventListener('click', () => playSeq(targetSeq));
+  setTimeout(() => playSeq(targetSeq), 300);
+
+  // Confirm
+  confirmBtn.addEventListener('click', () => hScale(builtArr, targetSeq));
+}
+
+function hScale(builtArr, targetSeq) {
+  if (G.ans || !lockAnswer()) return;
+  const fb = document.getElementById('fb');
+  const correct = builtArr.length === targetSeq.length && builtArr.every((id, i) => id === targetSeq[i]);
+  if (correct) {
+    fb.textContent = 'CERTO!'; fb.className = 'ok';
+    const seq = targetSeq;
+    const ms = Math.max(40, Math.round(800 / seq.length));
+    seq.forEach((nid, i) => setTimeout(() => playNote(nd(nid).f, 0.5), i * ms));
+    // Scale drill reward: double current combo
+    G.combo = Math.max(1, G.combo * 2);
+    G._lastBonus = G.combo;
+    if (G.combo > G.bestCombo) G.bestCombo = G.combo;
+    G.streak++;
+    G.ans = true;
+    unlockAnswer();
+    jOkChord(nd(targetSeq[0]).f);
+    lightning(1);
+    updateComboDisplay();
+    const rd = reactionDelay();
+    // Phase 6: always advance after 1 correct (no need to repeat)
+    setTimeout(() => advancePhaseWithRender(G.phase), rd); return;
+  } else {
+    fb.textContent = 'ERROU — tente de novo!'; fb.className = 'err';
+    playNote(nd(targetSeq[0]).f, .8); onErr();
+    jErrChord(nd(targetSeq[0]).f); updateComboDisplay();
+    stopComboTimer();
+    const c = document.getElementById('acard');
+    if (c) { c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 360); }
+    setTimeout(() => renderGameOver(), 800);
+  }
+}
+
 // ── PHASE 5 — LISTEN ──
 function rListen() {
   if(!G.cur||G.ans){game.pickNew();game.buildSOpts();}
@@ -581,6 +689,10 @@ function rPlay() {
   if(!G.cur||G.ans) game.pickNew();
   stampQuestion();
   const note=G.cur, n=nd(note), active=game.ga();
+  // Range covers only the octaves of currently active (unlocked) notes
+  const freqs = active.map(id => nd(id).f);
+  const minF = Math.min(...freqs), maxF = Math.max(...freqs);
+  const rangeIds = AN.filter(k => k.f >= minF * 0.97 && k.f <= maxF * 1.03).map(k => k.id);
   const card=document.createElement('div'); card.className='panel pop-in piano-card'; card.id='acard';
   card.innerHTML=`<div class="ptag">Fase 4 — Toque no teclado</div>
     <div class="play-row">
@@ -592,7 +704,7 @@ function rPlay() {
   ct.appendChild(card);
   document.getElementById('play-play').addEventListener('click',()=>playNote(n.f,1.2));
   let pendingKey=null;
-  const answerWrap=buildRefPiano(active, game.gn(), (cid,btn)=>{
+  const answerWrap=buildRefPiano(active, rangeIds, (cid,btn)=>{
     stampSelection();
     pendingKey=cid;
     card.querySelectorAll('.wkey').forEach(k=>k.classList.remove('selected-key'));
@@ -609,27 +721,102 @@ function rPlay() {
 
 // ── GAME OVER ──
 let _celebrationTimer = 0;
-function stopCelebration() { clearTimeout(_celebrationTimer); _celebrationTimer = 0; }
+let _celebrationCanvas = null;
+let _celebrationRaf = 0;
+
+function stopCelebration() {
+  clearTimeout(_celebrationTimer);
+  _celebrationTimer = 0;
+  cancelAnimationFrame(_celebrationRaf);
+  _celebrationRaf = 0;
+  if (_celebrationCanvas) { _celebrationCanvas.remove(); _celebrationCanvas = null; }
+}
 
 function startCelebrationLightning() {
   stopCelebration();
-  const comboEl = document.getElementById('combo-disp');
-  if (!comboEl) return;
-  function fireBolt() {
-    const rect = comboEl.getBoundingClientRect();
-    if (!rect.width) { stopCelebration(); return; }
+  const targetEl = document.querySelector('.score-show');
+  if (!targetEl) return;
+
+  // Create ONE persistent canvas
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999';
+  cv.width = window.innerWidth; cv.height = window.innerHeight;
+  document.body.appendChild(cv);
+  _celebrationCanvas = cv;
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  const COLOR = '#FFFF5E';
+
+  let bolts = [];
+  let boltStartTimes = [];
+
+  function genCelebBolt() {
+    const rect = targetEl.getBoundingClientRect();
+    if (!rect.width) return null;
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const spreadW = rect.width * 1.2;
-    const spreadH = rect.height * 1.0;
-    // Pick random origin and target within the spread zone
-    _lastClickX = cx + (Math.random() - 0.5) * spreadW;
-    _lastClickY = cy + (Math.random() - 0.5) * spreadH;
-    lightning(0.4 + Math.random() * 0.4);
-    const delay = 250 + Math.random() * 350;
-    _celebrationTimer = setTimeout(fireBolt, delay);
+    const spreadW = rect.width * 1.5;
+    const spreadH = rect.height * 1.2;
+    const ox = cx + (Math.random() - 0.5) * spreadW;
+    const oy = cy + (Math.random() - 0.5) * spreadH;
+    const tx = cx + (Math.random() - 0.5) * spreadW;
+    const ty = cy + (Math.random() - 0.5) * spreadH;
+    const t = 0.4 + Math.random() * 0.4;
+    const stepBase = 0.03 + t * 0.17;
+    const stepCount = Math.round(5 + t * 15);
+    const base = Math.min(W, H) * stepBase;
+    const pts = [{x: ox, y: oy, rays: []}];
+    let bx = ox, by = oy;
+    let ang = Math.atan2(ty - oy, tx - ox) + (Math.random() - 0.5) * 0.3;
+    for (let i = 0; i < stepCount; i++) {
+      const dist = Math.hypot(tx - bx, ty - by);
+      if (dist < base * 1.5) { pts.push({x: tx, y: ty, rays: []}); break; }
+      const toTarget = Math.atan2(ty - by, tx - bx);
+      ang = ang + (toTarget - ang) * 0.5 + (Math.random() - 0.5) * 0.8;
+      bx += Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
+      by += Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
+      pts.push({x: bx, y: by, rays: []});
+    }
+    return { pts, t };
   }
-  fireBolt();
+
+  const BOLT_MS = 320;
+  const SPREAD_MS = 200;
+
+  function spawnBolt() {
+    if (!_celebrationCanvas) return;
+    const b = genCelebBolt();
+    if (b) { bolts.push(b); boltStartTimes.push(performance.now()); }
+    _celebrationTimer = setTimeout(spawnBolt, 50 + Math.random() * 30);
+  }
+
+  function tick(now) {
+    if (!_celebrationCanvas) return;
+    ctx.clearRect(0, 0, W, H);
+    // Draw and age bolts
+    for (let i = bolts.length - 1; i >= 0; i--) {
+      const elapsed = now - boltStartTimes[i];
+      if (elapsed >= BOLT_MS) { bolts.splice(i, 1); boltStartTimes.splice(i, 1); continue; }
+      const reveal = Math.min(1, elapsed / SPREAD_MS);
+      let alpha = 1;
+      if (elapsed > SPREAD_MS) alpha = Math.max(0, 1 - (elapsed - SPREAD_MS) / (BOLT_MS - SPREAD_MS));
+      const { pts, t } = bolts[i];
+      const glowW = 0.5 + t * 1.5, coreW = 0.3 + t * 0.5;
+      const glowB = 2 + t * 8, coreB = 0.5 + t * 2.5;
+      const n = Math.max(2, Math.ceil(pts.length * reveal));
+      const vis = pts.slice(0, n);
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = COLOR; ctx.shadowColor = COLOR;
+      ctx.lineWidth = glowW; ctx.shadowBlur = glowB;
+      ctx.beginPath(); vis.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+      ctx.lineWidth = coreW; ctx.shadowBlur = coreB;
+      ctx.beginPath(); vis.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+    }
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    _celebrationRaf = requestAnimationFrame(tick);
+  }
+
+  spawnBolt();
+  _celebrationRaf = requestAnimationFrame(tick);
 }
 
 function renderGameOver() {
@@ -710,20 +897,23 @@ function hPiano(chosen,btn) {
 // ══════════════════════════════════════════════
 //  ONBOARDING FLOW
 // ══════════════════════════════════════════════
-let _obNotes = 3;
+let _obScaleType = 0;
+let _obOctaves = 1;
 
 function startOnboarding() {
   document.getElementById('intro-main').style.display = 'none';
   document.getElementById('game-page').classList.add('show');
   window.scrollTo(0, 0);
-  _obNotes = +document.getElementById('sni').value;
-  obStep1();
+  // Defaults: Major scale, 5 octaves (always expand from center)
+  _obScaleType = 0;
+  _obOctaves = 5;
+  applyObScale();
+  // Skip scale/octave selection — go straight to note count
+  obStepNoteCount();
 }
 
-function getObRange() {
-  if (_obNotes <= 10) return 'basic';
-  if (_obNotes <= 13) return 'extended';
-  return 'full';
+function getObNotes() {
+  return buildScale(_obScaleType, _obOctaves);
 }
 
 function updateObPiano() {
@@ -731,30 +921,38 @@ function updateObPiano() {
   if (!el) return;
   el.innerHTML = '';
   resetKbScroll();
-  const allNotes = NS[getObRange()];
-  const active = allNotes.slice(0, Math.min(_obNotes, allNotes.length));
-  const wrap = buildRefPiano(active, allNotes);
+  const allNotes = getObNotes();
+  const wrap = buildRefPiano(allNotes, allNotes);
   el.appendChild(wrap);
   registerKbWrapper(wrap);
 }
 
-function adjustObNotes(delta) {
-  _obNotes = Math.max(1, Math.min(19, _obNotes + delta));
-  const el = document.getElementById('ob-count');
-  if (el) el.textContent = _obNotes + (_obNotes === 1 ? ' nota' : ' notas');
-  updateObPiano();
+function playScalePreview() {
+  const notes = getObNotes();
+  const sorted = [...notes].sort((a, b) => nd(a).f - nd(b).f);
+  const ms = Math.max(40, Math.round(1200 / sorted.length));
+  sorted.forEach((nid, i) => {
+    setTimeout(() => playNote(nd(nid).f, 0.4), i * ms);
+  });
 }
 
-function applyObNotes() {
+function updateObLabels() {
+  const lbl = document.getElementById('ob-scale-label');
+  if (lbl) lbl.textContent = scaleName(_obScaleType, _obOctaves);
+}
+
+function applyObScale() {
   const snr = document.getElementById('snr');
+  const soct = document.getElementById('soct');
   const sni = document.getElementById('sni');
-  if (_obNotes <= 10) { snr.value = 1; sni.max = 10; }
-  else if (_obNotes <= 13) { snr.value = 2; sni.max = 13; }
-  else { snr.value = 3; sni.max = 19; }
-  sni.value = _obNotes;
-  document.getElementById('sni-v').textContent = _obNotes;
-  const NR_LABELS = ['básica','estendida','completa'];
-  document.getElementById('snr-v').textContent = NR_LABELS[+snr.value - 1];
+  snr.value = _obScaleType + 1;
+  soct.value = _obOctaves;
+  const scaleLen = getObNotes().length;
+  sni.max = scaleLen;
+  if (+sni.value > scaleLen) sni.value = scaleLen;
+  document.getElementById('sni-v').textContent = sni.value;
+  document.getElementById('snr-v').textContent = SCALE_TYPES[_obScaleType].name;
+  document.getElementById('soct-v').textContent = _obOctaves;
 }
 
 function setPhaseChecked(phId, checked) {
@@ -773,27 +971,80 @@ function obStep1() {
   const card = document.createElement('div');
   card.className = 'panel pop-in piano-card';
   card.innerHTML = `
-    <div class="ob-question">O quê você quer treinar hoje?</div>
-    <div class="ob-note-count" id="ob-count">${_obNotes} nota${_obNotes === 1 ? '' : 's'}</div>
+    <div class="ob-question">Qual escala você quer treinar?</div>
+    <div class="ob-note-count" id="ob-scale-label">${scaleName(_obScaleType, _obOctaves)}</div>
     <div class="ob-adj-row">
-      <button class="btn btn-ghost ob-adj" id="ob-m8">&minus;8</button>
-      <button class="btn btn-ghost ob-adj" id="ob-m1">&minus;1</button>
-      <button class="btn btn-ghost ob-adj" id="ob-p1">+1</button>
-      <button class="btn btn-ghost ob-adj" id="ob-p8">+8</button>
+      <button class="btn btn-ghost ob-adj" id="ob-type-prev">← Ant</button>
+      <span style="font-size:0.7rem;opacity:0.5">escala</span>
+      <button class="btn btn-ghost ob-adj" id="ob-type-next">Próx →</button>
+    </div>
+    <div class="ob-adj-row">
+      <button class="btn btn-ghost ob-adj" id="ob-oct-prev">− oitava</button>
+      <span style="font-size:0.7rem;opacity:0.5">oitavas</span>
+      <button class="btn btn-ghost ob-adj" id="ob-oct-next">+ oitava</button>
     </div>
     <div id="ob-piano"></div>
     <button class="btn" id="ob-next1">Próximo</button>
   `;
   ct.appendChild(card);
   updateObPiano();
-  document.getElementById('ob-m8').addEventListener('click', () => adjustObNotes(-8));
-  document.getElementById('ob-m1').addEventListener('click', () => adjustObNotes(-1));
-  document.getElementById('ob-p1').addEventListener('click', () => adjustObNotes(1));
-  document.getElementById('ob-p8').addEventListener('click', () => adjustObNotes(8));
-  document.getElementById('ob-next1').addEventListener('click', () => { applyObNotes(); obStepDifficulty(); });
+  playScalePreview();
+  document.getElementById('ob-type-prev').addEventListener('click', () => {
+    _obScaleType = Math.max(0, _obScaleType - 1);
+    updateObLabels(); updateObPiano(); playScalePreview();
+  });
+  document.getElementById('ob-type-next').addEventListener('click', () => {
+    _obScaleType = Math.min(SCALE_TYPES.length - 1, _obScaleType + 1);
+    updateObLabels(); updateObPiano(); playScalePreview();
+  });
+  document.getElementById('ob-oct-prev').addEventListener('click', () => {
+    _obOctaves = Math.max(1, _obOctaves - 1);
+    updateObLabels(); updateObPiano(); playScalePreview();
+  });
+  document.getElementById('ob-oct-next').addEventListener('click', () => {
+    _obOctaves = Math.min(5, _obOctaves + 1);
+    updateObLabels(); updateObPiano(); playScalePreview();
+  });
+  document.getElementById('ob-next1').addEventListener('click', () => { applyObScale(); obStepNoteCount(); });
 }
 
-const DIF_LABELS = ['tranquilo (5s)','fácil (4s)','médio (3s)','difícil (2s)','insano (1s)'];
+const DIF_LABELS = ['tranquilo (6s)','fácil (5s)','médio (4s)','difícil (3s)','insano (2s)'];
+
+function obStepNoteCount() {
+  ct.innerHTML = '';
+  const sni = document.getElementById('sni');
+  const totalNotes = getObNotes().length;
+  let curVal = sni ? Math.min(+sni.value, totalNotes) : 3;
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-icon">🎵</div>
+    <div class="ob-question">Quantas notas pra começar?</div>
+    <div class="ob-note-count" id="ob-nc-label">${curVal} nota${curVal > 1 ? 's' : ''}</div>
+    <div class="ob-adj-row">
+      <button class="btn btn-ghost ob-adj" id="ob-nc-down">−</button>
+      <button class="btn btn-ghost ob-adj" id="ob-nc-up">+</button>
+    </div>
+    <button class="btn" id="ob-nc-next">Próximo</button>
+  `;
+  ct.appendChild(card);
+  function updateNcLabel() {
+    document.getElementById('ob-nc-label').textContent = curVal + ' nota' + (curVal > 1 ? 's' : '');
+  }
+  document.getElementById('ob-nc-down').addEventListener('click', () => {
+    curVal = Math.max(2, curVal - 1); updateNcLabel();
+  });
+  document.getElementById('ob-nc-up').addEventListener('click', () => {
+    curVal = Math.min(totalNotes, curVal + 1); updateNcLabel();
+  });
+  document.getElementById('ob-nc-next').addEventListener('click', () => {
+    if (sni) {
+      sni.value = curVal;
+      document.getElementById('sni-v').textContent = curVal;
+    }
+    obStepDifficulty();
+  });
+}
 
 function obStepDifficulty() {
   ct.innerHTML = '';
@@ -804,19 +1055,16 @@ function obStepDifficulty() {
   card.innerHTML = `
     <div class="ob-icon">⏱️</div>
     <div class="ob-question">Qual dificuldade?</div>
-    <div class="ob-note-count" id="ob-dif-label">${DIF_LABELS[curVal]}</div>
+    <div class="ob-note-count" id="ob-dif-label">${DIF_LABELS[curVal - 1]}</div>
     <div class="ob-adj-row">
       <button class="btn btn-ghost ob-adj" id="ob-dif-down">−</button>
       <button class="btn btn-ghost ob-adj" id="ob-dif-up">+</button>
-    </div>
-    <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.4;">
-      Timer pra responder cada pergunta.<br>Se acabar, você perde o combo!
     </div>
     <button class="btn" id="ob-dif-next">Próximo</button>
   `;
   ct.appendChild(card);
   function updateDifLabel() {
-    document.getElementById('ob-dif-label').textContent = DIF_LABELS[curVal];
+    document.getElementById('ob-dif-label').textContent = DIF_LABELS[curVal - 1];
   }
   document.getElementById('ob-dif-down').addEventListener('click', () => {
     curVal = Math.max(1, curVal - 1); updateDifLabel();
@@ -825,7 +1073,7 @@ function obStepDifficulty() {
     curVal = Math.min(5, curVal + 1); updateDifLabel();
   });
   document.getElementById('ob-dif-next').addEventListener('click', () => {
-    if (sdif) { sdif.value = curVal; document.getElementById('sdif-v').textContent = DIF_LABELS[curVal]; }
+    if (sdif) { sdif.value = curVal; document.getElementById('sdif-v').textContent = DIF_LABELS[curVal - 1]; }
     obStep2();
   });
 }
@@ -864,8 +1112,7 @@ function obStep3() {
   document.getElementById('ob-staff-no').addEventListener('click', () => {
     setPhaseChecked('ph2', false);
     setPhaseChecked('ph3', false);
-    setPhaseChecked('ph4', true);
-    obStep5();
+    obStep4();
   });
 }
 
@@ -887,6 +1134,29 @@ function obStep4() {
   document.getElementById('ob-ears-no').addEventListener('click', () => {
     setPhaseChecked('ph4', false);
     setPhaseChecked('ph5', false);
+    obStepScale();
+  });
+}
+
+function obStepScale() {
+  ct.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.style.background = 'var(--bg2)';
+  card.innerHTML = `
+    <div class="ob-icon">🚧</div>
+    <div class="ob-question">Você quer treinar a sequência da escala?</div>
+    <div style="font-size:0.75rem;font-weight:700;color:var(--plus2);opacity:0.7;">EM CONSTRUÇÃO</div>
+    <button class="btn" id="ob-scale-no">Não</button>
+    <button class="btn btn-ghost" id="ob-scale-yes">Sim</button>
+  `;
+  ct.appendChild(card);
+  document.getElementById('ob-scale-yes').addEventListener('click', () => {
+    setPhaseChecked('ph6', true);
+    startGame(false);
+  });
+  document.getElementById('ob-scale-no').addEventListener('click', () => {
+    setPhaseChecked('ph6', false);
     startGame(false);
   });
 }
@@ -898,12 +1168,12 @@ function obStep5() {
   card.innerHTML = `
     <div class="ob-icon">&#x1F648;&#x1F442;</div>
     <div class="ob-question">Você também quer treinar o ouvido sem referência (mt difícil)?</div>
-    <button class="btn" id="ob-ref-yes">Sim</button>
-    <button class="btn btn-ghost" id="ob-ref-no">Não</button>
+    <button class="btn" id="ob-ref-no">Não</button>
+    <button class="btn btn-ghost" id="ob-ref-yes">Sim</button>
   `;
   ct.appendChild(card);
-  document.getElementById('ob-ref-yes').addEventListener('click', () => { setPhaseChecked('ph5', true); startGame(false); });
-  document.getElementById('ob-ref-no').addEventListener('click', () => { setPhaseChecked('ph5', false); startGame(false); });
+  document.getElementById('ob-ref-yes').addEventListener('click', () => { setPhaseChecked('ph5', true); obStepScale(); });
+  document.getElementById('ob-ref-no').addEventListener('click', () => { setPhaseChecked('ph5', false); obStepScale(); });
 }
 
 // ══════════════════════════════════════════════
@@ -973,15 +1243,28 @@ function initUI() {
     }
   });
 
-  const NR_LABELS = ['básica','estendida','completa'];
   const snr = document.getElementById('snr');
   const snrV = document.getElementById('snr-v');
-  snr.addEventListener('input', ()=>{ snrV.textContent = NR_LABELS[+snr.value - 1]; });
+  const soct = document.getElementById('soct');
+  const soctV = document.getElementById('soct-v');
+
+  function updateConfigScale() {
+    const typeIdx = Math.max(0, Math.min(SCALE_TYPES.length - 1, (+snr.value) - 1));
+    const octaves = Math.max(1, Math.min(5, +soct.value));
+    snrV.textContent = SCALE_TYPES[typeIdx].name;
+    soctV.textContent = octaves;
+    const scaleLen = buildScale(typeIdx, octaves).length;
+    sni.max = scaleLen;
+    if (+sni.value > scaleLen) { sni.value = scaleLen; sniV.textContent = scaleLen; }
+  }
+  snr.addEventListener('input', updateConfigScale);
+  soct.addEventListener('input', updateConfigScale);
+  updateConfigScale(); // set initial sni max based on defaults
 
   // difficulty (timer) slider
   const sdif = document.getElementById('sdif');
   const sdifV = document.getElementById('sdif-v');
-  sdif.addEventListener('input', ()=>{ sdifV.textContent = DIF_LABELS[+sdif.value]; });
+  sdif.addEventListener('input', ()=>{ sdifV.textContent = DIF_LABELS[+sdif.value - 1]; });
 
   // toggle rows (label click)
   document.querySelectorAll('.ptoggle-row').forEach(row=>{

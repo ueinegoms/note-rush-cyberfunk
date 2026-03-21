@@ -7,6 +7,7 @@ import {onOk, onErr} from './game.js';
 import * as lb from './leaderboard.js';
 import {buildStaff, buildStaffDrag, NY} from './staff.js';
 import {buildRefPiano} from './piano.js';
+import {hapticNudge, hapticSuccess, hapticError, hapticBuzz} from './haptics.js';
 
 // Notes already shown in Phase 1 this session — persists across restarts
 const sessionIntroduced = new Set();
@@ -197,21 +198,12 @@ function lightning(t) {
       let nx = cx + Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
       let ny = cy + Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
       let hit = false;
-      // Edge-slide: set angle parallel to the hit wall, pointing toward target on that axis
-      if (nx < 0)  { nx = 0; ang = (ety > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
-      if (nx > W)  { nx = W; ang = (ety > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
-      if (ny < 0)  { ny = 0; ang = (etx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
-      if (ny > H)  { ny = H; ang = (etx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
-      const rays = [];
-      if (hit) {
-        const count = rayMin + Math.floor(Math.random() * rayExtra);
-        for (let rr = 0; rr < count; rr++) {
-          const a = (rr / count) * Math.PI * 2;
-          const len = rayLenMin + Math.random() * rayLenRand;
-          rays.push({ a, len });
-        }
-      }
-      pts.push({x:nx, y:ny, rays});
+      // Wall-slide: project current direction onto the wall's axis (no target steering, no rays)
+      if (nx < 0)  { nx = 0; ang = Math.sin(ang) >= 0 ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.12; hit = true; }
+      if (nx > W)  { nx = W; ang = Math.sin(ang) >= 0 ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.12; hit = true; }
+      if (ny < 0)  { ny = 0; ang = Math.cos(ang) >= 0 ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.12; hit = true; }
+      if (ny > H)  { ny = H; ang = Math.cos(ang) >= 0 ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.12; hit = true; }
+      pts.push({x:nx, y:ny, rays:[]});
       cx = nx; cy = ny;
     }
     return pts;
@@ -311,9 +303,12 @@ function startComboTimer() {
     const frac = Math.max(0, 1 - elapsed / dur);
     updateTimerBar(frac);
     if (frac <= 0) {
+      // Guard against race with a just-submitted correct answer
+      if (!lockAnswer()) return;
       // Time's up — lose combo
       onErr();
       jErrChord(261.63);
+      hapticError();
       updateComboDisplay();
       stopComboTimer();
       renderGameOver();
@@ -517,12 +512,23 @@ function initDragStaff(note) {
   if (isTouchDevice) {
     document.getElementById('drag-confirm').style.display='block';
     renderDrag();
-    let startY=null, startSp=null, _lastDragSp=_dragSp;
+    let _prevY=null,_prevTime=null,_subStep=0,_lastDragSp=_dragSp;
     const PX_PER_STEP=LS/2;
     function snapToValid(sp){return validSps.reduce((b,v)=>Math.abs(v-sp)<Math.abs(b-sp)?v:b,validSps[0]);}
-    staffEl.addEventListener('touchstart',e=>{if(G.ans)return;e.preventDefault();startY=e.touches[0].clientY;startSp=_dragSp;},{passive:false});
-    staffEl.addEventListener('touchmove',e=>{if(G.ans||startY===null)return;e.preventDefault();const dy=startY-e.touches[0].clientY;_dragSp=snapToValid(Math.max(minSp,Math.min(maxSp,startSp+Math.round(dy/PX_PER_STEP))));if(_dragSp!==_lastDragSp){renderDrag();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn){const c=playNote(nd(mn).f,0.4);} _lastDragSp=_dragSp;}},{passive:false});
-    staffEl.addEventListener('touchend',e=>{if(G.ans||startY===null)return;e.preventDefault();stampSelection();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);startY=null;},{passive:false});
+    staffEl.addEventListener('touchstart',e=>{if(G.ans)return;e.preventDefault();_prevY=e.touches[0].clientY;_prevTime=performance.now();_subStep=0;},{passive:false});
+    staffEl.addEventListener('touchmove',e=>{
+      if(G.ans||_prevY===null)return;e.preventDefault();
+      const now=performance.now();const curY=e.touches[0].clientY;
+      const rawDy=_prevY-curY;const dt=Math.max(1,now-_prevTime);
+      const vel=Math.abs(rawDy)/dt;
+      // Velocity acceleration: slow drag = 1:1 fine control, fast swipe = up to 3x
+      const accel=Math.max(1,Math.min(3,1+Math.max(0,vel-0.3)/0.4));
+      _subStep+=(rawDy/PX_PER_STEP)*accel;
+      const steps=_subStep>=0?Math.floor(_subStep):Math.ceil(_subStep);_subStep-=steps;
+      if(steps!==0){const newSp=snapToValid(Math.max(minSp,Math.min(maxSp,_dragSp+steps)));if(newSp!==_lastDragSp){_dragSp=newSp;renderDrag();hapticNudge();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);_lastDragSp=_dragSp;}}
+      _prevY=curY;_prevTime=now;
+    },{passive:false});
+    staffEl.addEventListener('touchend',e=>{if(G.ans||_prevY===null)return;e.preventDefault();stampSelection();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);_prevY=null;},{passive:false});
   } else {
     let _hoverSp=null;
     renderDrag(null);
@@ -537,13 +543,13 @@ function hPlaceDrag() {
   const cor=G.cur, corSp=nd(cor).s+5, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb'), confirmBtn=document.getElementById('drag-confirm');
   if(confirmBtn) confirmBtn.disabled=true;
   if(_dragSp===corSp){staffEl.innerHTML=buildStaffDrag(_dragSp,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
-    jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
+    jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
     setTimeout(()=>{game.nextQ();render();},rd);
   }
   else{staffEl.innerHTML=buildStaffDrag(_dragSp,cor,null,_dragMinSp,_dragMaxSp);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
-    jErrChord(nd(cor).f); updateComboDisplay();
+    jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
     const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
     setTimeout(()=>renderGameOver(),800);
   }
@@ -552,13 +558,13 @@ function hPlace(chosen) {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb');
   if(chosen===cor){staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
-    jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
+    jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
     setTimeout(()=>{game.nextQ();render();},rd);
   }
   else{staffEl.innerHTML=buildStaffDrag(nd(chosen).s+5,cor,null,_dragMinSp,_dragMaxSp);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
-    jErrChord(nd(cor).f); updateComboDisplay();
+    jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
     const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
     setTimeout(()=>renderGameOver(),800);
   }
@@ -656,7 +662,7 @@ function hScale(builtArr, targetSeq) {
     G.ans = true;
     unlockAnswer();
     jOkChord(nd(targetSeq[0]).f);
-    lightning(1);
+    hapticSuccess(); lightning(1);
     updateComboDisplay();
     const rd = reactionDelay();
     // Phase 6: always advance after 1 correct (no need to repeat)
@@ -664,7 +670,7 @@ function hScale(builtArr, targetSeq) {
   } else {
     fb.textContent = 'ERROU — tente de novo!'; fb.className = 'err';
     playNote(nd(targetSeq[0]).f, .8); onErr();
-    jErrChord(nd(targetSeq[0]).f); updateComboDisplay();
+    jErrChord(nd(targetSeq[0]).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
     stopComboTimer();
     const c = document.getElementById('acard');
     if (c) { c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 360); }
@@ -778,20 +784,13 @@ function startCelebrationLightning() {
       ang = ang + (toTarget - ang) * 0.45 + (Math.random() - 0.5) * 0.9;
       let nx = bx + Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
       let ny = by + Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
-      // Edge-slide: set angle parallel to the hit wall, pointing toward target on that axis
+      // Wall-slide: project current direction onto the wall's axis (no explosion rays)
       let hit = false;
-      if (nx < cL) { nx = cL; ang = (ty > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
-      if (nx > cR) { nx = cR; ang = (ty > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
-      if (ny < cT) { ny = cT; ang = (tx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
-      if (ny > cB) { ny = cB; ang = (tx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
-      // Spark rays on wall impact
-      const rays = [];
-      if (hit) {
-        const rayCount = 2 + Math.floor(Math.random() * 4);
-        for (let r = 0; r < rayCount; r++)
-          rays.push({ a: Math.random() * Math.PI * 2, len: 6 + Math.random() * 18 });
-      }
-      pts.push({x: nx, y: ny, rays});
+      if (nx < cL) { nx = cL; ang = Math.sin(ang) >= 0 ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.12; hit = true; }
+      if (nx > cR) { nx = cR; ang = Math.sin(ang) >= 0 ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.12; hit = true; }
+      if (ny < cT) { ny = cT; ang = Math.cos(ang) >= 0 ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.12; hit = true; }
+      if (ny > cB) { ny = cB; ang = Math.cos(ang) >= 0 ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.12; hit = true; }
+      pts.push({x: nx, y: ny, rays: []});
       bx = nx; by = ny;
     }
     return { pts, t, startTime: performance.now() };
@@ -907,7 +906,7 @@ function renderGameOver() {
       card.appendChild(lbWrap);
       ct.appendChild(card);
       // Start celebration lightning if entering top 5
-      if (isTop5) startCelebrationLightning();
+      if (isTop5) { startCelebrationLightning(); hapticBuzz(); }
       const nw=document.createElement('div'); card.insertBefore(nw,lbWrap);
       nw.appendChild(lb.buildNameEntry(final,
         async(name)=>{nw.innerHTML=`<div class="lb-loading">SALVANDO...</div>`;await lb.submitScore(name,final);nw.innerHTML='';lb.renderLeaderboard(lbWrap,name,final);stopCelebration();},
@@ -917,6 +916,7 @@ function renderGameOver() {
       ag.addEventListener('click', ()=>{stopCelebration();startGame(false);});
       br.appendChild(ag); card.appendChild(br);
     } else {
+      hapticError();
       startGame(true); // keep unlocked count, skip phase 1 for known notes
     }
   });
@@ -932,13 +932,13 @@ function hId(chosen) {
   document.getElementById('ob-'+cor)?.classList.add('correct');
   const fb=document.getElementById('fb');
   if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';if(G.phase!==5)playNote(nd(cor).f,.8);onOk(selectionElapsed());
-      jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
+      jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
       const {sfp}=game.S(); const rd=reactionDelay();
       if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
       setTimeout(()=>{game.nextQ();render();},rd);
     }
     else{document.getElementById('ob-'+chosen)?.classList.add('wrong');fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
-      jErrChord(nd(cor).f); updateComboDisplay();
+      jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
       const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
       setTimeout(()=>renderGameOver(),800);
     }
@@ -950,13 +950,13 @@ function hPiano(chosen,btn) {
   document.querySelector('.wkey[data-note="'+cor+'"]')?.classList.add('ck');
   const fb=document.getElementById('fb');
   if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';onOk(selectionElapsed());
-      jOkChord(nd(cor).f); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
+      jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
       const {sfp}=game.S(); const rd=reactionDelay();
       if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
       setTimeout(()=>{game.nextQ();render();},rd);
     }
     else{btn.classList.add('wk');fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
-      jErrChord(nd(cor).f); updateComboDisplay();
+      jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
       const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
       setTimeout(()=>renderGameOver(),800);
     }

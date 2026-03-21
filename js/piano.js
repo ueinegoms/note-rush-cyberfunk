@@ -1,5 +1,6 @@
 import {nd} from './constants.js';
 import {playNote} from './audio.js';
+import {hapticKey} from './haptics.js';
 
 // Unified piano builder.
 // `active`   — array of note ids that are highlighted/interactive.
@@ -44,20 +45,20 @@ export function buildRefPiano(active, allScale, onKey = null) {
         if(onKey && isActive){
           // Answer mode: deferred play, selection callback
           let _tapped=false;
-          btn.addEventListener('mousedown',()=>{playNote(n.f,.7); btn.classList.add('pressed');});
+          btn.addEventListener('mousedown',()=>{hapticKey(); playNote(n.f,.7); btn.classList.add('pressed');});
           btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
           btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
           btn.addEventListener('click',()=>onKey(k.id,btn));
           btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
-          btn.addEventListener('touchend',e=>{e.preventDefault(); btn.classList.remove('pressed'); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; if(!_tapped){_tapped=true; playNote(n.f,.7); onKey(k.id,btn); setTimeout(()=>_tapped=false,350);}},{passive:false});
+          btn.addEventListener('touchend',e=>{e.preventDefault(); btn.classList.remove('pressed'); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; if(!_tapped){_tapped=true; hapticKey(); playNote(n.f,.7); onKey(k.id,btn); setTimeout(()=>_tapped=false,350);}},{passive:false});
         } else {
           // Reference mode: just play on press
           const rel=()=>{ btn.classList.remove('pressed'); };
-          btn.addEventListener('mousedown',()=>{playNote(n.f,.55); btn.classList.add('pressed');});
+          btn.addEventListener('mousedown',()=>{hapticKey(); playNote(n.f,.55); btn.classList.add('pressed');});
           btn.addEventListener('mouseup',rel);
           btn.addEventListener('mouseleave',rel);
           btn.addEventListener('touchstart',e=>{e.preventDefault(); btn.classList.add('pressed');},{passive:false});
-          btn.addEventListener('touchend',e=>{e.preventDefault(); rel(); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; playNote(n.f,.55);},{passive:false});
+          btn.addEventListener('touchend',e=>{e.preventDefault(); rel(); const w=btn.closest('.pianow'); if(w&&w.dataset.scrolling==='1')return; hapticKey(); playNote(n.f,.55);},{passive:false});
         }
       }
     }
@@ -73,7 +74,7 @@ export function buildRefPiano(active, allScale, onKey = null) {
     if (k.id && onKey && isActive) {
       btn.dataset.note = k.id;
       let _tapped = false;
-      btn.addEventListener('mousedown',()=>{playNote(k.f,.7); btn.classList.add('pressed');});
+      btn.addEventListener('mousedown',()=>{hapticKey(); playNote(k.f,.7); btn.classList.add('pressed');});
       btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
       btn.addEventListener('mouseleave',()=>btn.classList.remove('pressed'));
       btn.addEventListener('click',()=>onKey(k.id,btn));

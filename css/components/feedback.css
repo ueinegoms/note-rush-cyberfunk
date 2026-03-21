@@ -40,17 +40,18 @@
   align-items: center;
   gap: 0.4rem;
   padding: 1rem 0;
+  color: #fff !important;
 }
 
 .combo-lost .big {
   font-size: clamp(1.4rem, 6vw, 2rem);
   font-weight: 800;
-  color: var(--err);
+  color: #ffffff !important;
   letter-spacing: 0.06em;
 }
 
 .combo-lost .score-show {
-  font-size: clamp(2rem, 8vw, 3rem);
+  font-size: clamp(3.5rem, 14vw, 6rem);
   font-weight: 800;
   color: var(--plus2);
   line-height: 1;

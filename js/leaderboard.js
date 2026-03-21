@@ -104,7 +104,7 @@ export async function renderLeaderboard(container, hlName = null, hlScore = null
 // ══════════════════════════════════════════════
 export function buildNameEntry(combo,onSubmit,onSkip){
   const wrap=document.createElement('div');wrap.className='name-entry';
-  const h3=document.createElement('h3');h3.textContent='SALVAR NO RANKING';wrap.appendChild(h3);
+  const h3=document.createElement('h3');h3.textContent='COLOQUE SEU APELIDO';wrap.appendChild(h3);
 
   const NAME_ALPHABET='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?'.split('');
   const NAME_LEN=3;

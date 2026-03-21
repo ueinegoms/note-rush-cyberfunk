@@ -197,10 +197,11 @@ function lightning(t) {
       let nx = cx + Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
       let ny = cy + Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
       let hit = false;
-      if (nx < 0)  { nx = 0; ang = Math.PI - ang; hit = true; }
-      if (nx > W)  { nx = W; ang = Math.PI - ang; hit = true; }
-      if (ny < 0)  { ny = 0; ang = -ang;           hit = true; }
-      if (ny > H)  { ny = H; ang = -ang;           hit = true; }
+      // Edge-slide: set angle parallel to the hit wall, pointing toward target on that axis
+      if (nx < 0)  { nx = 0; ang = (ety > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
+      if (nx > W)  { nx = W; ang = (ety > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
+      if (ny < 0)  { ny = 0; ang = (etx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
+      if (ny > H)  { ny = H; ang = (etx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
       const rays = [];
       if (hit) {
         const count = rayMin + Math.floor(Math.random() * rayExtra);
@@ -741,8 +742,9 @@ function stopCelebration() {
 
 function startCelebrationLightning() {
   stopCelebration();
-  const targetEl = document.querySelector('.score-show');
-  if (!targetEl) return;
+  const scoreEl = document.querySelector('.score-show');
+  const cardEl  = document.getElementById('acard');
+  if (!scoreEl || !cardEl) return;
 
   const cv = document.createElement('canvas');
   cv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999';
@@ -752,42 +754,71 @@ function startCelebrationLightning() {
   const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
   const COLOR = '#FFFF5E';
   const NUM_SNAKES = 5;
-  const BOLT_MS = 420;      // active bolt duration
-  const SPREAD_MS = 220;    // reveal phase
-  const LINGER_MS = 500;    // extra fade time for the ghost
+  const BOLT_MS = 420;
+  const SPREAD_MS = 220;
+  const LINGER_MS = 500;
 
+  // Bolt steps are sized relative to the card, not the full screen,
+  // so bolts traverse the card area with realistic segment lengths.
   function genBolt(ox, oy, tx, ty) {
+    const cr = cardEl.getBoundingClientRect();
+    const cL = cr.left, cR = cr.right, cT = cr.top, cB = cr.bottom;
+    const cardDim = Math.min(cR - cL, cB - cT);
     const t = 0.5 + Math.random() * 0.5;
-    const stepBase = 0.03 + t * 0.17;
-    const stepCount = Math.round(8 + t * 14);
-    const base = Math.min(W, H) * stepBase;
-    const pts = [{x: ox, y: oy}];
+    const stepBase = 0.06 + t * 0.12;   // fraction of card's smaller dimension
+    const stepCount = Math.round(10 + t * 16);
+    const base = cardDim * stepBase;
+    const pts = [{x: ox, y: oy, rays: []}];
     let bx = ox, by = oy;
     let ang = Math.atan2(ty - oy, tx - ox) + (Math.random() - 0.5) * 0.4;
     for (let i = 0; i < stepCount; i++) {
       const dist = Math.hypot(tx - bx, ty - by);
-      if (dist < base * 1.5) { pts.push({x: tx, y: ty}); break; }
+      if (dist < base * 1.5) { pts.push({x: tx, y: ty, rays: []}); break; }
       const toTarget = Math.atan2(ty - by, tx - bx);
       ang = ang + (toTarget - ang) * 0.45 + (Math.random() - 0.5) * 0.9;
       let nx = bx + Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
       let ny = by + Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
-      if (nx < 0) { nx = 0; ang = Math.PI - ang; }
-      if (nx > W) { nx = W; ang = Math.PI - ang; }
-      if (ny < 0) { ny = 0; ang = -ang; }
-      if (ny > H) { ny = H; ang = -ang; }
-      pts.push({x: nx, y: ny});
+      // Edge-slide: set angle parallel to the hit wall, pointing toward target on that axis
+      let hit = false;
+      if (nx < cL) { nx = cL; ang = (ty > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
+      if (nx > cR) { nx = cR; ang = (ty > ny) ?  Math.PI/2 : -Math.PI/2; ang += (Math.random()-0.5)*0.35; hit = true; }
+      if (ny < cT) { ny = cT; ang = (tx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
+      if (ny > cB) { ny = cB; ang = (tx > nx) ?  0         :  Math.PI;   ang += (Math.random()-0.5)*0.35; hit = true; }
+      // Spark rays on wall impact
+      const rays = [];
+      if (hit) {
+        const rayCount = 2 + Math.floor(Math.random() * 4);
+        for (let r = 0; r < rayCount; r++)
+          rays.push({ a: Math.random() * Math.PI * 2, len: 6 + Math.random() * 18 });
+      }
+      pts.push({x: nx, y: ny, rays});
       bx = nx; by = ny;
     }
     return { pts, t, startTime: performance.now() };
   }
 
-  function randomScorePoint() {
-    const rect = targetEl.getBoundingClientRect();
+  // Origin: anywhere inside the rendered score element bounding box.
+  // getBoundingClientRect() gives the EXACT pixel size of the rendered text
+  // element, so the spread naturally matches whatever font size is displayed.
+  function randomOriginPoint() {
+    const rect = scoreEl.getBoundingClientRect();
     if (!rect.width) return { x: W / 2, y: H / 2 };
     return {
       x: rect.left + Math.random() * rect.width,
       y: rect.top  + Math.random() * rect.height
     };
+  }
+
+  // Target: random point on any of the four card edges
+  function randomBorderPoint() {
+    const rect = cardEl.getBoundingClientRect();
+    if (!rect.width) return { x: W / 2, y: 0 };
+    switch (Math.floor(Math.random() * 4)) {
+      case 0: return { x: rect.left  + Math.random() * rect.width,  y: rect.top    };
+      case 1: return { x: rect.right,                                y: rect.top  + Math.random() * rect.height };
+      case 2: return { x: rect.left  + Math.random() * rect.width,  y: rect.bottom };
+      default:return { x: rect.left,                                 y: rect.top  + Math.random() * rect.height };
+    }
   }
 
   function drawBoltAt(pts, t, alpha) {
@@ -800,20 +831,24 @@ function startCelebrationLightning() {
     ctx.beginPath(); pts.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
     ctx.lineWidth = coreW; ctx.shadowBlur = coreB;
     ctx.beginPath(); pts.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+    // Spark rays at wall-bounce points
+    pts.forEach(p => {
+      (p.rays || []).forEach(ray => {
+        ctx.lineWidth = coreW; ctx.shadowBlur = coreB * 1.5;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + Math.cos(ray.a) * ray.len, p.y + Math.sin(ray.a) * ray.len);
+        ctx.stroke();
+      });
+    });
   }
 
-  // Stagger snake start times so they march one after another
   const snakes = Array.from({length: NUM_SNAKES}, (_, i) => {
     const offset = (BOLT_MS / NUM_SNAKES) * i;
-    const from = randomScorePoint();
-    const to   = randomScorePoint();
+    const from = randomOriginPoint();
+    const to   = randomBorderPoint();
     const bolt = genBolt(from.x, from.y, to.x, to.y);
-    bolt.startTime = performance.now() + offset; // delayed start
-    return {
-      bolt,
-      headX: to.x, headY: to.y,
-      ghost: null  // previous bolt kept for fading
-    };
+    bolt.startTime = performance.now() + offset;
+    return { bolt, ghost: null };
   });
 
   function tick(now) {
@@ -824,29 +859,21 @@ function startCelebrationLightning() {
       const { bolt, ghost } = snake;
       const elapsed = now - bolt.startTime;
 
-      // Draw ghost (lingering previous bolt)
       if (ghost) {
         const ge = now - ghost.endTime;
-        if (ge < LINGER_MS) {
-          const ghostAlpha = 0.35 * Math.max(0, 1 - ge / LINGER_MS);
-          drawBoltAt(ghost.pts, ghost.t, ghostAlpha);
-        }
+        if (ge < LINGER_MS) drawBoltAt(ghost.pts, ghost.t, 0.35 * Math.max(0, 1 - ge / LINGER_MS));
       }
 
-      // Not started yet (stagger delay)
       if (elapsed < 0) continue;
 
       if (elapsed >= BOLT_MS) {
-        // Bolt finished — promote to ghost, spawn next
         snake.ghost = { pts: bolt.pts, t: bolt.t, endTime: now };
-        const from = { x: snake.headX, y: snake.headY };
-        const to   = randomScorePoint();
-        snake.headX = to.x; snake.headY = to.y;
+        const from = randomOriginPoint();
+        const to   = randomBorderPoint();
         snake.bolt  = genBolt(from.x, from.y, to.x, to.y);
         continue;
       }
 
-      // Active bolt — progressive reveal then fade
       const reveal = Math.min(1, elapsed / SPREAD_MS);
       let alpha = 1;
       if (elapsed > SPREAD_MS) alpha = Math.max(0, 1 - (elapsed - SPREAD_MS) / (BOLT_MS - SPREAD_MS));
@@ -873,8 +900,7 @@ function renderGameOver() {
       const isTop5 = !rows || rows.length < 5 || final > rows[rows.length - 1].score;
       const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
       const lost=document.createElement('div'); lost.className='combo-lost';
-      lost.innerHTML=`<div class="big">COMBO PERDIDO!</div>
-        <div style="font-size:.8rem;color:rgba(255,255,94,0.45);letter-spacing:.12em;">SEU COMBO</div>
+      lost.innerHTML=`<div class="big">TOP 5 ATINGIDO!</div>
         <div class="score-show">x${final}</div>`;
       card.appendChild(lost);
       const lbWrap=document.createElement('div'); lbWrap.style.cssText='width:100%;margin-top:.5rem;';

@@ -11,6 +11,13 @@ import {buildRefPiano} from './piano.js';
 // Notes already shown in Phase 1 this session — persists across restarts
 const sessionIntroduced = new Set();
 
+// Top-5 leaderboard threshold — fetched once at init, updated when player enters top 5
+let _top5Threshold = Infinity;
+
+// Track last click/tap position for lightning origin
+let _lastClickX = 0, _lastClickY = 0;
+document.addEventListener('pointerdown', e => { _lastClickX = e.clientX; _lastClickY = e.clientY; }, true);
+
 // Mobile detection
 const _isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -145,32 +152,48 @@ function lightning(t) {
 
   const mix = (lo, hi) => lo + t * (hi - lo);
 
-  const glowWidth  = mix(1, 4);
-  const coreWidth  = mix(0.5, 1.5);
-  const glowBlur   = mix(4, 22);
-  const coreBlur   = mix(1, 5);
-  const rayBlur    = mix(2, 14);
-  const stepBase   = mix(0.03, 0.33);
-  const stepCount  = Math.round(mix(3, 15));
-  const rayMin     = Math.round(mix(1, 5));
-  const rayExtra   = Math.round(mix(0, 5));
-  const rayLenMin  = mix(4, 18);
-  const rayLenRand = mix(6, 38);
+  const glowWidth  = mix(0.5, 2);
+  const coreWidth  = mix(0.3, 0.8);
+  const glowBlur   = mix(2, 10);
+  const coreBlur   = mix(0.5, 3);
+  const rayBlur    = mix(1, 6);
+  const stepBase   = mix(0.03, 0.2);
+  const stepCount  = Math.round(mix(5, 20));
+  const rayMin     = Math.round(mix(0, 2));
+  const rayExtra   = Math.round(mix(0, 2));
+  const rayLenMin  = mix(2, 8);
+  const rayLenRand = mix(3, 12);
 
-  // All bolts spread outward from one random origin
-  const ox = Math.random() * W, oy = Math.random() * H;
-  const maxSpread = mix(0.08, 1.5);
+  // Origin = last click (exact), target = combo display with slight displacement
+  const comboEl = document.getElementById('combo-disp');
+  const comboRect = comboEl ? comboEl.getBoundingClientRect() : null;
+  const ox = _lastClickX || W / 2;
+  const oy = _lastClickY || H / 2;
+  const comboW = comboRect ? comboRect.width : 40;
+  const comboH = comboRect ? comboRect.height : 30;
+  const maxSpread = mix(0.01, 0.15);
 
   function genBolt(spreadFrac) {
-    const r = spreadFrac * Math.max(W, H) * maxSpread;
-    const a0 = Math.random() * Math.PI * 2;
-    const sx = ox + Math.cos(a0) * r * Math.random();
-    const sy = oy + Math.sin(a0) * r * Math.random();
+    // Start exactly at click
+    const sx = ox;
+    const sy = oy;
+    // End with slight random displacement around combo element area
+    const etx = (comboRect ? comboRect.left + comboRect.width / 2 : W / 2) + (Math.random() - 0.5) * comboW * 0.6;
+    const ety = (comboRect ? comboRect.top + comboRect.height / 2 : 30) + (Math.random() - 0.5) * comboH * 0.5;
     const pts = [{x:sx, y:sy, rays:[]}];
-    let cx = sx, cy = sy, ang = a0 + (Math.random() - 0.5) * 2;
+    let cx = sx, cy = sy;
+    let ang = Math.atan2(ety - sy, etx - sx) + (Math.random() - 0.5) * 0.3;
     const base = Math.min(W, H) * stepBase;
     for (let i = 0; i < stepCount; i++) {
-      ang += (Math.random() - 0.5) * 1.5;
+      // Stop bolt once it reaches near the target
+      const distToTarget = Math.hypot(etx - cx, ety - cy);
+      if (distToTarget < base * 1.5) {
+        pts.push({x: etx, y: ety, rays: []});
+        break;
+      }
+      // Re-steer toward target with random jitter
+      const toTarget = Math.atan2(ety - cy, etx - cx);
+      ang = ang + (toTarget - ang) * 0.5 + (Math.random() - 0.5) * 0.8;
       let nx = cx + Math.cos(ang) * base * (0.5 + Math.random() * 0.9);
       let ny = cy + Math.sin(ang) * base * (0.5 + Math.random() * 0.9);
       let hit = false;
@@ -217,7 +240,7 @@ function lightning(t) {
     });
   }
 
-  const numBolts = Math.max(1, Math.round(mix(1, 15)));
+  const numBolts = Math.max(1, G._lastBonus || 1);
   const TOTAL_MS = 320;
   const SPREAD_MS = 200;  // reveal segments over first 200ms
   const FADE_MS = TOTAL_MS - SPREAD_MS; // fade everything over last 120ms
@@ -261,19 +284,104 @@ function advancePhaseWithRender(oldPhase) {
 }
 
 // ══════════════════════════════════════════════
+//  COMBO TIMER
+// ══════════════════════════════════════════════
+let _comboTimerId = 0;
+let _comboTimerRaf = 0;
+let _comboTimerStart = 0;
+
+function getTimerDuration() {
+  // sdif slider: 1 = 5s, 2 = 4s, 3 = 3s, 4 = 2s, 5 = 1s
+  const el = document.getElementById('sdif');
+  const v = el ? +el.value : 1;
+  return 6000 - v * 1000; // 1→5s, 2→4s, 3→3s, 4→2s, 5→1s
+}
+
+function startComboTimer() {
+  stopComboTimer();
+  const dur = getTimerDuration();
+  if (dur <= 0 || G.combo === 0) { hideTimerBar(); return; }
+  _comboTimerStart = Date.now();
+  showTimerBar();
+  // Animate the bar
+  function tick() {
+    const elapsed = Date.now() - _comboTimerStart;
+    const frac = Math.max(0, 1 - elapsed / dur);
+    updateTimerBar(frac);
+    if (frac <= 0) {
+      // Time's up — lose combo
+      onErr();
+      jErrChord(261.63);
+      updateComboDisplay();
+      stopComboTimer();
+      renderGameOver();
+      return;
+    }
+    _comboTimerRaf = requestAnimationFrame(tick);
+  }
+  _comboTimerRaf = requestAnimationFrame(tick);
+}
+
+function stopComboTimer() {
+  cancelAnimationFrame(_comboTimerRaf);
+  _comboTimerRaf = 0;
+  hideTimerBar();
+}
+
+function showTimerBar() {
+  const bar = document.getElementById('combo-timer-bar');
+  if (bar) bar.style.display = '';
+}
+
+function hideTimerBar() {
+  const bar = document.getElementById('combo-timer-bar');
+  if (bar) { bar.style.display = 'none'; bar.style.width = '100%'; }
+}
+
+function updateTimerBar(frac) {
+  const bar = document.getElementById('combo-timer-bar');
+  if (!bar) return;
+  bar.style.width = (frac * 100) + '%';
+  // Color transitions: green → yellow → red
+  if (frac > 0.5) bar.style.background = 'var(--ok)';
+  else if (frac > 0.2) bar.style.background = 'var(--plus2)';
+  else bar.style.background = 'var(--err)';
+}
+
+// ══════════════════════════════════════════════
 //  RENDER / UI
 // ══════════════════════════════════════════════
 const ct = document.getElementById('ct');
 let _questionStart = 0;
 let _selectionTime = 0;
-function stampQuestion() { _questionStart = Date.now(); _selectionTime = 0; }
-function stampSelection() { _selectionTime = Date.now(); }
+function stampQuestion() {
+  _questionStart = Date.now(); _selectionTime = 0;
+  // If the player already has a combo, start the timer immediately for the new question.
+  // Only defer (arm) for the very first question when combo is still 0.
+  if (G.combo > 0) { _timerArmed = false; startComboTimer(); }
+  else { _timerArmed = true; }
+}
+function stampSelection() {
+  _selectionTime = Date.now();
+  // Start the combo timer on the first player action, not on question appear
+  if (_timerArmed) { _timerArmed = false; startComboTimer(); }
+}
+let _timerArmed = false;
 function selectionElapsed() { return (_selectionTime || Date.now()) - _questionStart; }
 function reactionDelay() { return Math.min(Date.now() - _questionStart, 800); }
 
 function updateComboDisplay() {
   const el = document.getElementById('combo-disp'); if(!el) return;
   el.textContent = 'x'+G.combo;
+}
+
+// Keep the "quantidade de notas" slider in sync with G.unlocked
+function syncNoteSlider() {
+  const sni = document.getElementById('sni');
+  const sniV = document.getElementById('sni-v');
+  if (!sni) return;
+  sni.value = G.unlocked;
+  if (sniV) sniV.textContent = G.unlocked;
 }
 
 function appendRefPiano() {
@@ -296,7 +404,9 @@ function render() {
   document.querySelectorAll('.ref-piano-outer').forEach(el => el.remove());
   resetKbScroll();
   unlockAnswer();
+  stopComboTimer();
   updateComboDisplay();
+  syncNoteSlider();
   if (G.phase === 0) { showIntroPage(); return; }
 
   showGamePage();
@@ -337,6 +447,7 @@ function rLearn() {
         :`<button class="btn" id="go-next">Praticar →</button>`}
     </div>`;
   ct.appendChild(card);
+  setTimeout(()=>playNote(n.f),300);
   document.getElementById('learn-play').addEventListener('click',()=>playNote(n.f));
   if (li>0) document.getElementById('lprev').addEventListener('click',()=>{G.li=Math.max(0,li-1); render();});
   if (li<newNotes.length-1) document.getElementById('lnext').addEventListener('click',()=>{G.li=Math.min(newNotes.length-1,li+1); render();});
@@ -360,6 +471,7 @@ function rIdentify() {
     <div class="opts">${ch.map(nid=>`<button class="btn-option" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
     <div id="fb"></div>`;
   ct.appendChild(card);
+  setTimeout(()=>playNote(nd(note).f),300);
   ch.forEach(nid=>{
     document.getElementById('ob-'+nid).addEventListener('click',()=>{ stampSelection(); hId(nid); });
   });
@@ -380,6 +492,7 @@ function rPlace() {
     <div id="fb"></div>
     <button class="btn" id="drag-confirm" style="display:none">✓ Confirmar posição</button>`;
   ct.appendChild(card);
+  setTimeout(()=>playNote(n.f),300);
   initDragStaff(note);
   const confirmBtn = document.getElementById('drag-confirm');
   if (confirmBtn) confirmBtn.addEventListener('click', hPlaceDrag);
@@ -495,13 +608,40 @@ function rPlay() {
 }
 
 // ── GAME OVER ──
+let _celebrationTimer = 0;
+function stopCelebration() { clearTimeout(_celebrationTimer); _celebrationTimer = 0; }
+
+function startCelebrationLightning() {
+  stopCelebration();
+  const comboEl = document.getElementById('combo-disp');
+  if (!comboEl) return;
+  function fireBolt() {
+    const rect = comboEl.getBoundingClientRect();
+    if (!rect.width) { stopCelebration(); return; }
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const spreadW = rect.width * 1.2;
+    const spreadH = rect.height * 1.0;
+    // Pick random origin and target within the spread zone
+    _lastClickX = cx + (Math.random() - 0.5) * spreadW;
+    _lastClickY = cy + (Math.random() - 0.5) * spreadH;
+    lightning(0.4 + Math.random() * 0.4);
+    const delay = 250 + Math.random() * 350;
+    _celebrationTimer = setTimeout(fireBolt, delay);
+  }
+  fireBolt();
+}
+
 function renderGameOver() {
+  stopComboTimer();
+  stopCelebration();
   const final=G._lastCombo||0;
   ct.innerHTML='';
   // Check leaderboard first — only show the score screen if they qualify
   lb.getLeaderboard().then(rows=>{
     const qualifies=!rows||rows.length<5||(rows[rows.length-1]&&final>rows[rows.length-1].score);
     if(final>0&&qualifies){
+      const isTop5 = !rows || rows.length < 5 || final > rows[rows.length - 1].score;
       const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
       const lost=document.createElement('div'); lost.className='combo-lost';
       lost.innerHTML=`<div class="big">COMBO PERDIDO!</div>
@@ -511,13 +651,15 @@ function renderGameOver() {
       const lbWrap=document.createElement('div'); lbWrap.style.cssText='width:100%;margin-top:.5rem;';
       card.appendChild(lbWrap);
       ct.appendChild(card);
+      // Start celebration lightning if entering top 5
+      if (isTop5) startCelebrationLightning();
       const nw=document.createElement('div'); card.insertBefore(nw,lbWrap);
       nw.appendChild(lb.buildNameEntry(final,
-        async(name)=>{nw.innerHTML=`<div class="lb-loading">SALVANDO...</div>`;await lb.submitScore(name,final);nw.innerHTML='';lb.renderLeaderboard(lbWrap,name,final);},
-        ()=>{nw.innerHTML='';lb.renderLeaderboard(lbWrap);} ));
+        async(name)=>{nw.innerHTML=`<div class="lb-loading">SALVANDO...</div>`;await lb.submitScore(name,final);nw.innerHTML='';lb.renderLeaderboard(lbWrap,name,final);stopCelebration();},
+        ()=>{nw.innerHTML='';lb.renderLeaderboard(lbWrap);stopCelebration();} ));
       const br=document.createElement('div'); br.style.cssText='display:flex;gap:.6rem;margin-top:.5rem;width:100%;';
       const ag=document.createElement('button'); ag.className='btn btn-replay'; ag.textContent='↺ JOGAR DE NOVO';
-      ag.addEventListener('click', ()=>startGame(false));
+      ag.addEventListener('click', ()=>{stopCelebration();startGame(false);});
       br.appendChild(ag); card.appendChild(br);
     } else {
       startGame(true); // keep unlocked count, skip phase 1 for known notes
@@ -648,7 +790,44 @@ function obStep1() {
   document.getElementById('ob-m1').addEventListener('click', () => adjustObNotes(-1));
   document.getElementById('ob-p1').addEventListener('click', () => adjustObNotes(1));
   document.getElementById('ob-p8').addEventListener('click', () => adjustObNotes(8));
-  document.getElementById('ob-next1').addEventListener('click', () => { applyObNotes(); obStep2(); });
+  document.getElementById('ob-next1').addEventListener('click', () => { applyObNotes(); obStepDifficulty(); });
+}
+
+const DIF_LABELS = ['tranquilo (5s)','fácil (4s)','médio (3s)','difícil (2s)','insano (1s)'];
+
+function obStepDifficulty() {
+  ct.innerHTML = '';
+  const sdif = document.getElementById('sdif');
+  let curVal = sdif ? +sdif.value : 1;
+  const card = document.createElement('div');
+  card.className = 'panel pop-in';
+  card.innerHTML = `
+    <div class="ob-icon">⏱️</div>
+    <div class="ob-question">Qual dificuldade?</div>
+    <div class="ob-note-count" id="ob-dif-label">${DIF_LABELS[curVal]}</div>
+    <div class="ob-adj-row">
+      <button class="btn btn-ghost ob-adj" id="ob-dif-down">−</button>
+      <button class="btn btn-ghost ob-adj" id="ob-dif-up">+</button>
+    </div>
+    <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);text-align:center;line-height:1.4;">
+      Timer pra responder cada pergunta.<br>Se acabar, você perde o combo!
+    </div>
+    <button class="btn" id="ob-dif-next">Próximo</button>
+  `;
+  ct.appendChild(card);
+  function updateDifLabel() {
+    document.getElementById('ob-dif-label').textContent = DIF_LABELS[curVal];
+  }
+  document.getElementById('ob-dif-down').addEventListener('click', () => {
+    curVal = Math.max(1, curVal - 1); updateDifLabel();
+  });
+  document.getElementById('ob-dif-up').addEventListener('click', () => {
+    curVal = Math.min(5, curVal + 1); updateDifLabel();
+  });
+  document.getElementById('ob-dif-next').addEventListener('click', () => {
+    if (sdif) { sdif.value = curVal; document.getElementById('sdif-v').textContent = DIF_LABELS[curVal]; }
+    obStep2();
+  });
 }
 
 function obStep2() {
@@ -783,12 +962,26 @@ function initUI() {
   sfp.addEventListener('input', ()=>{sfpV.textContent = sfp.value;});
   const sni = document.getElementById('sni');
   const sniV = document.getElementById('sni-v');
-  sni.addEventListener('input', ()=>{sniV.textContent = sni.value;});
+  sni.addEventListener('input', ()=>{
+    const v = +sni.value;
+    sniV.textContent = v;
+    // Live mid-game adjustment
+    if (G.phase > 0) {
+      const allN = game.gn();
+      G.unlocked = Math.min(v, allN.length);
+      render();
+    }
+  });
 
   const NR_LABELS = ['básica','estendida','completa'];
   const snr = document.getElementById('snr');
   const snrV = document.getElementById('snr-v');
   snr.addEventListener('input', ()=>{ snrV.textContent = NR_LABELS[+snr.value - 1]; });
+
+  // difficulty (timer) slider
+  const sdif = document.getElementById('sdif');
+  const sdifV = document.getElementById('sdif-v');
+  sdif.addEventListener('input', ()=>{ sdifV.textContent = DIF_LABELS[+sdif.value]; });
 
   // toggle rows (label click)
   document.querySelectorAll('.ptoggle-row').forEach(row=>{
@@ -810,7 +1003,13 @@ function initUI() {
 }
 
 // kick things off
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initUI();
+  // Fetch top-5 threshold so lightning color reflects leaderboard status
+  try {
+    const rows = await lb.getLeaderboard();
+    if (rows && rows.length >= 5) _top5Threshold = rows[rows.length - 1].score;
+    else _top5Threshold = 0; // fewer than 5 entries — any score qualifies
+  } catch { _top5Threshold = Infinity; }
   lb.renderLeaderboard(document.getElementById('lb-intro'));
 });

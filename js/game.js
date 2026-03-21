@@ -96,7 +96,22 @@ export function goNextPhase(current) {
 }
 
 export function advanceNote() {
-  const allN = gn();
+  let allN = gn();
+  // Auto-promote to the next scale tier when all notes in the current one are unlocked
+  if (G.unlocked >= allN.length) {
+    const snr = document.getElementById('snr');
+    const curIdx = Math.max(0, Math.min(2, (+snr.value) - 1));
+    if (curIdx < 2) {
+      snr.value = curIdx + 2;
+      const NR_LABELS = ['básica','estendida','completa'];
+      const snrV = document.getElementById('snr-v');
+      if (snrV) snrV.textContent = NR_LABELS[curIdx + 1];
+      // Update slider max for new scale
+      const sni = document.getElementById('sni');
+      if (sni) sni.max = [10, 13, 19][curIdx + 1];
+      allN = gn();
+    }
+  }
   if (G.unlocked < allN.length) {
     G.unlocked++;
     G.streak = 0;
@@ -111,7 +126,7 @@ export function advanceNote() {
     }, 800);
   } else {
     G.streak = 0;
-    // All notes unlocked; just show next button
+    // All notes unlocked across all scales
   }
 }
 
@@ -130,6 +145,7 @@ export function onOk(elapsedMs) {
   G.streak++;
   const maxBonus = PHASE_BONUS[G.phase] || 1;
   const bonus = comboLerp(elapsedMs, maxBonus);
+  G._lastBonus = bonus;
   G.combo += bonus;
   if (G.combo > G.bestCombo) G.bestCombo = G.combo;
   G.ans = true;

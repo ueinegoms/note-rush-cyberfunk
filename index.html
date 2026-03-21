@@ -34,6 +34,7 @@
   <div class="header-logo">
     <div class="header-logo-text">NOTE RUSH</div>
   </div>
+  <div class="combo-timer-bar" id="combo-timer-bar"></div>
   <div class="header-score-num" id="combo-disp">x0</div>
 </header>
 
@@ -63,6 +64,14 @@
 
   <div class="sr">
     <div class="sr-label">
+      <span>dificuldade (timer)</span>
+      <span class="sr-val" id="sdif-v">tranquilo (5s)</span>
+    </div>
+    <input type="range" id="sdif" min="1" max="5" value="1" step="1">
+  </div>
+
+  <div class="sr">
+    <div class="sr-label">
       <span>acertos p/ avançar</span>
       <span class="sr-val" id="sfp-v">5</span>
     </div>
@@ -71,7 +80,7 @@
 
   <div class="sr">
     <div class="sr-label">
-      <span>notas iniciais</span>
+      <span>quantidade de notas</span>
       <span class="sr-val" id="sni-v">3</span>
     </div>
     <input type="range" id="sni" min="1" max="13" value="3">

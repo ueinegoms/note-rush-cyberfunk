@@ -27,11 +27,12 @@ export const AN = [
   {id:'Sol5',s:4,   lb:'Sol₅',lB:'SOL₅',f:783.99},
 ];
 
-// NOTE SETS
+// NOTE SETS — each tier is a proper prefix of the next so unlocks
+// progress seamlessly when the player exhausts a smaller scale.
 export const NS = {
   basic:    ['Mi4','Fá4','Sol4','Lá4','Si4','Dó5','Ré5','Mi5','Fá5','Sol5'],
-  extended: ['Sol3','Lá3','Si3','Dó4','Ré4','Mi4','Fá4','Sol4','Lá4','Si4','Dó5','Ré5','Mi5'],
-  full:     AN.map(n => n.id),
+  extended: ['Mi4','Fá4','Sol4','Lá4','Si4','Dó5','Ré5','Mi5','Fá5','Sol5','Ré4','Dó4','Si3'],
+  full:     ['Mi4','Fá4','Sol4','Lá4','Si4','Dó5','Ré5','Mi5','Fá5','Sol5','Ré4','Dó4','Si3','Lá3','Sol3','Fá3','Mi3','Ré3','Dó3'],
 };
 
 export function nd(id) {

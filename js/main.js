@@ -899,8 +899,7 @@ function renderGameOver() {
       const isTop5 = !rows || rows.length < 5 || final > rows[rows.length - 1].score;
       const card=document.createElement('div'); card.className='panel pop-in'; card.id='acard';
       const lost=document.createElement('div'); lost.className='combo-lost';
-      lost.innerHTML=`<div class="big">TOP 5 ATINGIDO!</div>
-        <div class="score-show">x${final}</div>`;
+      lost.innerHTML=`<div class="score-show">x${final}</div>`;
       card.appendChild(lost);
       const lbWrap=document.createElement('div'); lbWrap.style.cssText='width:100%;margin-top:.5rem;';
       card.appendChild(lbWrap);

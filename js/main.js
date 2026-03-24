@@ -7,13 +7,16 @@ import {onOk, onErr} from './game.js';
 import * as lb from './leaderboard.js';
 import {buildStaff, buildStaffDrag, NY} from './staff.js';
 import {buildRefPiano} from './piano.js';
-import {hapticNudge, hapticSuccess, hapticError, hapticBuzz} from './haptics.js';
+import {hapticNudge, hapticSuccess, hapticError, hapticBuzz, hapticRevolution, hapticBoundary} from './haptics.js';
 
 // Notes already shown in Phase 1 this session — persists across restarts
 const sessionIntroduced = new Set();
 
 // Top-5 leaderboard threshold — fetched once at init, updated when player enters top 5
 let _top5Threshold = Infinity;
+
+// Render epoch — incremented on every render(); guards stale async callbacks (e.g. lb.getLeaderboard)
+let _epoch = 0;
 
 // Track last click/tap position for lightning origin
 let _lastClickX = 0, _lastClickY = 0;
@@ -398,6 +401,7 @@ function appendRefPiano() {
 }
 
 function render() {
+  _epoch++;
   ct.innerHTML = '';
   document.querySelectorAll('.ref-piano-outer').forEach(el => el.remove());
   resetKbScroll();
@@ -513,7 +517,9 @@ function initDragStaff(note) {
     document.getElementById('drag-confirm').style.display='block';
     renderDrag();
     let _prevY=null,_prevTime=null,_subStep=0,_lastDragSp=_dragSp;
+    let _totalSteps=0,_atBoundary=false,_lastRevCount=0;
     const PX_PER_STEP=LS/2;
+    const _revSteps=Math.max(1,validSps.length);
     function snapToValid(sp){return validSps.reduce((b,v)=>Math.abs(v-sp)<Math.abs(b-sp)?v:b,validSps[0]);}
     staffEl.addEventListener('touchstart',e=>{if(G.ans)return;e.preventDefault();_prevY=e.touches[0].clientY;_prevTime=performance.now();_subStep=0;},{passive:false});
     staffEl.addEventListener('touchmove',e=>{
@@ -525,7 +531,7 @@ function initDragStaff(note) {
       const accel=Math.max(1,Math.min(3,1+Math.max(0,vel-0.3)/0.4));
       _subStep+=(rawDy/PX_PER_STEP)*accel;
       const steps=_subStep>=0?Math.floor(_subStep):Math.ceil(_subStep);_subStep-=steps;
-      if(steps!==0){const newSp=snapToValid(Math.max(minSp,Math.min(maxSp,_dragSp+steps)));if(newSp!==_lastDragSp){_dragSp=newSp;renderDrag();hapticNudge();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);_lastDragSp=_dragSp;}}
+      if(steps!==0){_totalSteps+=steps;const revNow=Math.floor(Math.abs(_totalSteps)/_revSteps);if(revNow>_lastRevCount){hapticRevolution();_lastRevCount=revNow;}const newSp=snapToValid(Math.max(minSp,Math.min(maxSp,_dragSp+steps)));if(newSp!==_lastDragSp){_atBoundary=false;_dragSp=newSp;renderDrag();hapticNudge();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);_lastDragSp=_dragSp;}else{const _isAtBnd=(steps>0&&_dragSp>=maxSp)||(steps<0&&_dragSp<=minSp);if(_isAtBnd&&!_atBoundary){hapticBoundary();_atBoundary=true;}}}
       _prevY=curY;_prevTime=now;
     },{passive:false});
     staffEl.addEventListener('touchend',e=>{if(G.ans||_prevY===null)return;e.preventDefault();stampSelection();const mn=game.ga().find(nid=>nd(nid).s+5===_dragSp);if(mn)playNote(nd(mn).f,0.4);_prevY=null;},{passive:false});
@@ -542,7 +548,7 @@ function hPlaceDrag() {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur, corSp=nd(cor).s+5, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb'), confirmBtn=document.getElementById('drag-confirm');
   if(confirmBtn) confirmBtn.disabled=true;
-  if(_dragSp===corSp){staffEl.innerHTML=buildStaffDrag(_dragSp,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
+  if(_dragSp===corSp){stopComboTimer();staffEl.innerHTML=buildStaffDrag(_dragSp,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
     jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
@@ -551,13 +557,13 @@ function hPlaceDrag() {
   else{staffEl.innerHTML=buildStaffDrag(_dragSp,cor,null,_dragMinSp,_dragMaxSp);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
     jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
     const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
-    setTimeout(()=>renderGameOver(),800);
+    {const _eg=_epoch;setTimeout(()=>{if(_epoch===_eg)renderGameOver();},800);}
   }
 }
 function hPlace(chosen) {
   if(G.ans||!lockAnswer())return;
   const cor=G.cur, staffEl=document.getElementById('drag-staff'), fb=document.getElementById('fb');
-  if(chosen===cor){staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
+  if(chosen===cor){stopComboTimer();staffEl.innerHTML=buildStaffDrag(nd(cor).s+5,null,null,_dragMinSp,_dragMaxSp);fb.textContent='CERTO!';fb.className='ok';playNote(nd(cor).f,.8);onOk(selectionElapsed());
     jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
     const {sfp}=game.S(); const rd=reactionDelay();
     if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
@@ -566,7 +572,7 @@ function hPlace(chosen) {
   else{staffEl.innerHTML=buildStaffDrag(nd(chosen).s+5,cor,null,_dragMinSp,_dragMaxSp);fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
     jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
     const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
-    setTimeout(()=>renderGameOver(),800);
+    {const _eg=_epoch;setTimeout(()=>{if(_epoch===_eg)renderGameOver();},800);}
   }
 }
 
@@ -650,6 +656,7 @@ function hScale(builtArr, targetSeq) {
   const fb = document.getElementById('fb');
   const correct = builtArr.length === targetSeq.length && builtArr.every((id, i) => id === targetSeq[i]);
   if (correct) {
+    stopComboTimer();
     fb.textContent = 'CERTO!'; fb.className = 'ok';
     const seq = targetSeq;
     const ms = Math.max(40, Math.round(800 / seq.length));
@@ -674,7 +681,7 @@ function hScale(builtArr, targetSeq) {
     stopComboTimer();
     const c = document.getElementById('acard');
     if (c) { c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 360); }
-    setTimeout(() => renderGameOver(), 800);
+    {const _eg=_epoch;setTimeout(()=>{if(_epoch===_eg)renderGameOver();},800);}
   }
 }
 
@@ -796,15 +803,16 @@ function startCelebrationLightning() {
     return { pts, t, startTime: performance.now() };
   }
 
-  // Origin: anywhere inside the rendered score element bounding box.
-  // getBoundingClientRect() gives the EXACT pixel size of the rendered text
-  // element, so the spread naturally matches whatever font size is displayed.
+  // Origin: within 80% of the score element's bounding box (centred),
+  // so bolts feel like they radiate from the combo number itself.
   function randomOriginPoint() {
     const rect = scoreEl.getBoundingClientRect();
     if (!rect.width) return { x: W / 2, y: H / 2 };
+    const cx = rect.left + rect.width  / 2;
+    const cy = rect.top  + rect.height / 2;
     return {
-      x: rect.left + Math.random() * rect.width,
-      y: rect.top  + Math.random() * rect.height
+      x: cx + (Math.random() - 0.5) * rect.width  * 0.8,
+      y: cy + (Math.random() - 0.5) * rect.height * 0.8
     };
   }
 
@@ -824,6 +832,21 @@ function startCelebrationLightning() {
     if (pts.length < 2) return;
     const glowW = 0.5 + t * 1.5, coreW = 0.3 + t * 0.5;
     const glowB = 4 + t * 10,    coreB = 0.5 + t * 3;
+
+    // Circular glow at spawn origin so the bolt looks like it erupts from the combo
+    const ox = pts[0].x, oy = pts[0].y;
+    const glowR = 8 + t * 18;
+    const grad = ctx.createRadialGradient(ox, oy, 0, ox, oy, glowR);
+    grad.addColorStop(0,    'rgba(255,255,100,0.92)');
+    grad.addColorStop(0.42, 'rgba(255,220,30,0.45)');
+    grad.addColorStop(1,    'rgba(255,160,0,0)');
+    ctx.globalAlpha = alpha;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(ox, oy, glowR, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = COLOR; ctx.shadowColor = COLOR;
     ctx.lineWidth = glowW; ctx.shadowBlur = glowB;
@@ -891,9 +914,11 @@ function renderGameOver() {
   stopComboTimer();
   stopCelebration();
   const final=G._lastCombo||0;
+  const myEpoch=_epoch;
   ct.innerHTML='';
   // Check leaderboard first — only show the score screen if they qualify
   lb.getLeaderboard().then(rows=>{
+    if(_epoch!==myEpoch)return;
     const qualifies=!rows||rows.length<5||(rows[rows.length-1]&&final>rows[rows.length-1].score);
     if(final>0&&qualifies){
       const isTop5 = !rows || rows.length < 5 || final > rows[rows.length - 1].score;
@@ -906,10 +931,12 @@ function renderGameOver() {
       ct.appendChild(card);
       // Start celebration lightning if entering top 5
       if (isTop5) { startCelebrationLightning(); hapticBuzz(); }
+
       const nw=document.createElement('div'); card.insertBefore(nw,lbWrap);
       nw.appendChild(lb.buildNameEntry(final,
         async(name)=>{nw.innerHTML=`<div class="lb-loading">SALVANDO...</div>`;await lb.submitScore(name,final);nw.innerHTML='';lb.renderLeaderboard(lbWrap,name,final);stopCelebration();},
         ()=>{nw.innerHTML='';lb.renderLeaderboard(lbWrap);stopCelebration();} ));
+
       const br=document.createElement('div'); br.style.cssText='display:flex;gap:.6rem;margin-top:.5rem;width:100%;';
       const ag=document.createElement('button'); ag.className='btn btn-replay'; ag.textContent='↺ JOGAR DE NOVO';
       ag.addEventListener('click', ()=>{stopCelebration();startGame(false);});
@@ -930,7 +957,7 @@ function hId(chosen) {
   document.querySelectorAll('.btn-option').forEach(b=>b.disabled=true);
   document.getElementById('ob-'+cor)?.classList.add('correct');
   const fb=document.getElementById('fb');
-  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';if(G.phase!==5)playNote(nd(cor).f,.8);onOk(selectionElapsed());
+  if(chosen===cor){stopComboTimer();fb.textContent='CERTO!';fb.className='ok';if(G.phase!==5)playNote(nd(cor).f,.8);onOk(selectionElapsed());
       jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
       const {sfp}=game.S(); const rd=reactionDelay();
       if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
@@ -939,7 +966,7 @@ function hId(chosen) {
     else{document.getElementById('ob-'+chosen)?.classList.add('wrong');fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
       jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
       const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
-      setTimeout(()=>renderGameOver(),800);
+      {const _eg=_epoch;setTimeout(()=>{if(_epoch===_eg)renderGameOver();},800);}
     }
 }
 function hPiano(chosen,btn) {
@@ -948,7 +975,7 @@ function hPiano(chosen,btn) {
   document.querySelectorAll('.wkey:not(.inactive),.bkey').forEach(k=>{k.classList.add('dis');k.style.pointerEvents='none';});
   document.querySelector('.wkey[data-note="'+cor+'"]')?.classList.add('ck');
   const fb=document.getElementById('fb');
-  if(chosen===cor){fb.textContent='CERTO!';fb.className='ok';onOk(selectionElapsed());
+  if(chosen===cor){stopComboTimer();fb.textContent='CERTO!';fb.className='ok';onOk(selectionElapsed());
       jOkChord(nd(cor).f); hapticSuccess(); lightning(lightningIntensity(selectionElapsed())); updateComboDisplay();
       const {sfp}=game.S(); const rd=reactionDelay();
       if(G.streak>=sfp){ setTimeout(()=>advancePhaseWithRender(G.phase),rd);return; }
@@ -957,7 +984,7 @@ function hPiano(chosen,btn) {
     else{btn.classList.add('wk');fb.textContent='ERROU — era '+nd(cor).lB;fb.className='err';playNote(nd(cor).f,.8);onErr();
       jErrChord(nd(cor).f); if(G._lastCombo<=_top5Threshold) hapticError(); updateComboDisplay();
       const c=document.getElementById('acard');if(c){c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),360);}
-      setTimeout(()=>renderGameOver(),800);
+      {const _eg=_epoch;setTimeout(()=>{if(_epoch===_eg)renderGameOver();},800);}
     }
 }
 

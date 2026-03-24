@@ -26,3 +26,12 @@ export const hapticBuzz = () => _h.trigger([
   { delay: 40, duration: 60, intensity: 0.85 },
   { delay: 60, duration: 180, intensity: 1 },
 ]);
+
+/** Strong single clock-tock — one full wheel revolution while dragging phase 3 */
+export const hapticRevolution = () => _h.trigger([{ duration: 40, intensity: 1 }]);
+
+/** Double bump — reached the edge of the note range while dragging phase 3 */
+export const hapticBoundary = () => _h.trigger([
+  { duration: 25, intensity: 1 },
+  { delay: 25, duration: 25, intensity: 0.8 },
+]);

@@ -17,3 +17,63 @@
   height: auto; 
   display: block; 
 }
+
+/* ── DRAG STRIP V2 ── */
+.drag-layout {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.drag-layout .drag-staffw {
+  flex: 1;
+  min-width: 0;
+}
+
+.drag-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  width: 56px;
+}
+
+.drag-btn {
+  width: 52px;
+  height: 52px;
+  font-size: 1.4rem;
+  border-radius: 50%;
+  border: 2px solid var(--plus2);
+  background: transparent;
+  color: var(--plus2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  line-height: 1;
+  transition: background 0.1s, color 0.1s;
+}
+
+.drag-btn:active {
+  background: var(--plus2);
+  color: var(--plus1);
+}
+
+.drag-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.drag-strip-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  min-height: 1.2em;
+  text-align: center;
+  width: 100%;
+  letter-spacing: 0.04em;
+}

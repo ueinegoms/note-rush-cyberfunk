@@ -2,8 +2,7 @@ import { G, unlockAnswer } from './state.js';
 import * as game from './game.js';
 import * as lb from './leaderboard.js';
 import { startComboTimer, stopComboTimer, updateComboDisplay, setComboTimeoutHandler } from './combo-timer.js';
-import { resetKbScroll, registerKbWrapper } from './keyboard-scroll.js';
-import { buildRefPiano } from './piano.js';
+import { resetKbScroll } from './keyboard-scroll.js';
 import { sessionIntroduced } from './session.js';
 import { rLearn } from './stages/phase1-learn.js';
 import { rIdentify } from './stages/phase2-identify.js';
@@ -64,21 +63,6 @@ function showIntroPage() {
   document.getElementById('game-page').classList.remove('show');
   window.scrollTo(0, 0);
   lb.renderLeaderboard(document.getElementById('lb-intro'));
-}
-
-// ── Reference piano (shown below phase cards) ──
-function appendRefPiano() {
-  const active = game.ga(), allScale = game.gn();
-  const outer = document.createElement('div');
-  outer.className = 'ref-piano-outer';
-  const lbl = document.createElement('div');
-  lbl.className = 'ref-piano-lbl';
-  lbl.textContent = 'teclado de referência (use o seu instrumento de base, se puder)';
-  outer.appendChild(lbl);
-  const pianoWrap = buildRefPiano(active, allScale);
-  outer.appendChild(pianoWrap);
-  ct.appendChild(outer);
-  registerKbWrapper(pianoWrap);
 }
 
 // Keep the note count slider in sync with G.unlocked

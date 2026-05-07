@@ -133,3 +133,75 @@ export function buildStaffDrag(dragSp, revealId = null, ghostSp = null, rangeMin
   s += `</svg>`;
   return s;
 }
+
+/**
+ * Build a staff SVG that shows a single note with a duration symbol.
+ * durationType: 'whole' | 'half' | 'quarter' | 'eighth'
+ */
+export function buildStaffRhythm(sp, durationType = 'quarter') {
+  const PL = 98, PR = 27;
+  let vbTop = 0, vbBottom = SH;
+  const ny = NY(sp);
+  vbTop    = Math.min(vbTop,    ny - 90);
+  vbBottom = Math.max(vbBottom, ny + 90);
+
+  let s = `<svg class="ssvg" viewBox="0 ${vbTop} ${SW} ${vbBottom - vbTop}" xmlns="http://www.w3.org/2000/svg">`;
+  const gc = 'rgba(255,255,255,0.22)', gx1 = PL, gx2 = SW - PR;
+
+  if (sp < 0) {
+    const bl = sp % 2 === 0 ? sp : sp - 1;
+    for (let p = -2; p >= bl; p -= 2)
+      s += `<line x1="${gx1}" y1="${NY(p)}" x2="${gx2}" y2="${NY(p)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  }
+  if (sp > 8) {
+    const tl = sp % 2 === 0 ? sp : sp + 1;
+    for (let p = 10; p <= tl; p += 2)
+      s += `<line x1="${gx1}" y1="${NY(p)}" x2="${gx2}" y2="${NY(p)}" stroke="${gc}" stroke-width="1.8" stroke-dasharray="9 6"/>`;
+  }
+  for (let i = 0; i < 5; i++) {
+    const y = NY(i * 2);
+    s += `<line x1="${PL}" y1="${y}" x2="${SW-PR}" y2="${y}" stroke="#FFFFFF" stroke-width="2.7"/>`;
+  }
+  const cfs = LS * 5.4, cy2 = BY - LS * 0.08;
+  s += `<text x="14" y="${cy2}" font-size="${cfs}" fill="#FFFF5E" font-family="Georgia,serif" opacity=".7">&#x1D11E;</text>`;
+
+  // ledger lines
+  const cx = NX, cy = NY(sp);
+  function ledgers() {
+    let ll = '';
+    const lx1 = cx - 29, lx2 = cx + 29;
+    if (sp < 0) for (let p = -2; p >= (sp%2===0?sp:sp-1); p -= 2) ll += `<line x1="${lx1}" y1="${NY(p)}" x2="${lx2}" y2="${NY(p)}" stroke="#FFFF5E" stroke-width="2.2"/>`;
+    if (sp > 8) for (let p = 10; p <= (sp%2===0?sp:sp+1); p += 2) ll += `<line x1="${lx1}" y1="${NY(p)}" x2="${lx2}" y2="${NY(p)}" stroke="#FFFF5E" stroke-width="2.2"/>`;
+    return ll;
+  }
+  s += ledgers();
+
+  const col = '#FFFF5E';
+  const filled = durationType === 'quarter' || durationType === 'eighth';
+  if (filled) {
+    s += `<ellipse cx="${cx}" cy="${cy}" rx="18" ry="13" fill="${col}" transform="rotate(-12,${cx},${cy})"/>`;
+  } else {
+    // hollow: draw ellipse outline + fill background
+    s += `<ellipse cx="${cx}" cy="${cy}" rx="18" ry="13" fill="#1B0093" stroke="${col}" stroke-width="2.5" transform="rotate(-12,${cx},${cy})"/>`;
+  }
+
+  if (durationType !== 'whole') {
+    const sdir = sp < 4 ? -1 : 1;
+    const sx = sdir === 1 ? cx - 17 : cx + 17;
+    const sy2 = cy + sdir * 69;
+    s += `<line x1="${sx}" y1="${cy}" x2="${sx}" y2="${sy2}" stroke="${col}" stroke-width="3"/>`;
+    // eighth note flag
+    if (durationType === 'eighth') {
+      if (sdir === 1) {
+        // stem up → flag hangs right from top
+        s += `<path d="M${sx},${sy2} C${sx+28},${sy2+15} ${sx+32},${sy2+30} ${sx+12},${sy2+45}" stroke="${col}" stroke-width="2.5" fill="none"/>`;
+      } else {
+        // stem down → flag hangs right from bottom
+        s += `<path d="M${sx},${sy2} C${sx+28},${sy2-15} ${sx+32},${sy2-30} ${sx+12},${sy2-45}" stroke="${col}" stroke-width="2.5" fill="none"/>`;
+      }
+    }
+  }
+
+  s += `</svg>`;
+  return s;
+}

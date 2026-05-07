@@ -134,6 +134,24 @@
   padding: 0.5rem 0;
 }
 
+/* ── RHYTHM PHASE timeline bar ── */
+.rhythm-timeline {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0.25rem 0;
+}
+
+.rhythm-bar {
+  height: 100%;
+  width: 0;
+  background: var(--plus2);
+  border-radius: 4px;
+  will-change: width;
+}
+
 /* ── MOBILE SILENT-MODE MODAL ── */
 .silent-modal-overlay {
   position: fixed;

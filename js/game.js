@@ -4,7 +4,7 @@ import {G, lockAnswer, unlockAnswer} from './state.js';
 import { getNoteScale, getSettings } from './settings.js';
 
 // phases utilities — ordered by difficulty
-const PHASE_ORDER = [1,2,3,4,5,6];
+const PHASE_ORDER = [1,2,3,4,5,6,7];
 export function getActivePhases() {
   const res = [];
   for (const ph of PHASE_ORDER) {
@@ -13,7 +13,7 @@ export function getActivePhases() {
   }
   return res.length > 0 ? res : PHASE_ORDER;
 }
-const PHASE_BONUS = {1:1, 2:2, 3:3, 4:4, 5:5, 6:10};
+const PHASE_BONUS = {1:1, 2:2, 3:3, 4:4, 5:5, 6:10, 7:12};
 export function nextActivePhase(current) {
   const phases = getActivePhases();
   const idx = phases.indexOf(current);

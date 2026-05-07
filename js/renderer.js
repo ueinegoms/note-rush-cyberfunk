@@ -11,6 +11,7 @@ import { rPlace } from './stages/phase3-place.js';
 import { rPlay } from './stages/phase4-play.js';
 import { rListen } from './stages/phase5-listen.js';
 import { rScale } from './stages/phase6-scale.js';
+import { rRhythm } from './stages/phase7-rhythm.js';
 import { renderGameOver } from './stages/game-over.js';
 
 // Wire the combo timeout handler here to break:
@@ -109,6 +110,7 @@ export function render() {
   else if (G.phase === 4) rPlay();
   else if (G.phase === 5) rListen();
   else if (G.phase === 6) rScale();
+  else if (G.phase === 7) rRhythm();
 }
 
 // Safe phase advance — waits for pendingUnlock async delay when needed

@@ -129,3 +129,13 @@ export function scaleName(typeIdx, octaves) {
 export function nd(id) {
   return AN.find(n => n.id === id);
 }
+
+// ── RHYTHM PHASE ────────────────────────────────────────────────────────────
+export const DEFAULT_BPM = 80;
+
+export const DURATIONS = [
+  { id: 'whole',   beats: 4,   label: 'Semibreve'  },
+  { id: 'half',    beats: 2,   label: 'Mínima'     },
+  { id: 'quarter', beats: 1,   label: 'Semínima'   },
+  { id: 'eighth',  beats: 0.5, label: 'Colcheia'   },
+];

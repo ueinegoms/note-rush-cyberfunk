@@ -144,6 +144,11 @@ function initUI() {
   const sdifV = document.getElementById('sdif-v');
   sdif.addEventListener('input', ()=>{ sdifV.textContent = DIF_LABELS[+sdif.value - 1]; });
 
+  // BPM slider (phase 7 rhythm)
+  const sbpm = document.getElementById('sbpm');
+  const sbpmV = document.getElementById('sbpm-v');
+  if (sbpm && sbpmV) sbpm.addEventListener('input', () => { sbpmV.textContent = sbpm.value; });
+
   // toggle rows (label click)
   document.querySelectorAll('.ptoggle-row').forEach(row=>{
     row.addEventListener('click', e=>{

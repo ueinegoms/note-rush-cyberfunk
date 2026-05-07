@@ -14,6 +14,8 @@ import {
   getEpoch, getTop5Threshold
 } from '../main.js';
 
+import { makeCard, makeFeedback } from '../components.js';
+
 const ct = document.getElementById('ct');
 
 let _dragSp = null;
@@ -24,20 +26,22 @@ export function rPlace() {
   if (!G.cur || G.ans) game.pickNew();
   stampQuestion();
   const note = G.cur, n = nd(note);
-  const card = document.createElement('div'); card.className = 'panel pop-in'; card.id = 'acard';
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const hint = isTouchDevice ? 'Arraste ↕ pra posicionar, confirme' : 'Clique na posição correta na pauta';
-  card.innerHTML = `<div class="ptag">Fase 3 — Posicione a nota</div>
-    <div class="nname">${n.lB}</div>
-    <div class="drag-hint" id="drag-hint">${hint}</div>
-    <div class="drag-staffw" id="drag-staff"></div>
-    <div id="fb"></div>
-    <button class="btn" id="drag-confirm" style="display:none">✓ Confirmar posição</button>`;
+
+  const card = makeCard({ phase: 3, label: 'Posicione a nota' });
+  const nname = document.createElement('div'); nname.className = 'nname'; nname.textContent = n.lB;
+  const dragHint = document.createElement('div'); dragHint.className = 'drag-hint'; dragHint.id = 'drag-hint'; dragHint.textContent = hint;
+  const dragStaff = document.createElement('div'); dragStaff.className = 'drag-staffw'; dragStaff.id = 'drag-staff';
+  const fb = makeFeedback();
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn'; confirmBtn.id = 'drag-confirm'; confirmBtn.textContent = '✓ Confirmar posição'; confirmBtn.style.display = 'none';
+
+  card.append(nname, dragHint, dragStaff, fb, confirmBtn);
   ct.appendChild(card);
   setTimeout(() => playNote(n.f), 300);
   initDragStaff(note);
-  const confirmBtn = document.getElementById('drag-confirm');
-  if (confirmBtn) confirmBtn.addEventListener('click', hPlaceDrag);
+  confirmBtn.addEventListener('click', hPlaceDrag);
 }
 
 function initDragStaff(note) {

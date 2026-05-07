@@ -1,9 +1,69 @@
 /* ══════════════════════════════════════
    BUTTON SPECIFICS
    (base .btn / .btn-ghost / .btn-option defined in base.css)
+
+   data-variant attribute system (Phase 3):
+     <button class="btn" data-variant="ghost">   → ghost style
+     <button class="btn" data-variant="option">  → option style
+     <button class="btn" data-variant="replay">  → replay style
+     <button class="btn" data-variant="cta">     → main CTA style
+   Old modifier classes kept as aliases so no stage JS breaks.
 ══════════════════════════════════════ */
 
-/* JOGAR — main CTA, larger text */
+/* ── data-variant aliases (new) ───────────────────────────────── */
+
+.btn[data-variant="ghost"],
+.btn-ghost {
+  background: var(--plus1);
+  color: var(--plus2);
+  border: none;
+}
+
+.btn[data-variant="ghost"]:active,
+.btn-ghost:active {
+  background: var(--plus2);
+  color: var(--plus1);
+}
+
+@media (hover: hover) {
+  .btn[data-variant="ghost"]:hover,
+  .btn-ghost:hover {
+    background: var(--plus2);
+    color: var(--plus1);
+  }
+}
+
+.btn[data-variant="option"],
+.btn-option {
+  background: var(--plus1);
+  color: var(--plus2);
+  border: none;
+  flex: 1;
+  min-width: 100px;
+  min-height: 52px;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+}
+
+.btn[data-variant="option"]:disabled,
+.btn-option:disabled { cursor: default; }
+
+.btn[data-variant="option"].selected,
+.btn-option.selected { background: var(--plus2); color: var(--plus1); }
+
+.btn[data-variant="option"].correct,
+.btn-option.correct  { background: var(--ok); color: var(--plus1); }
+
+.btn[data-variant="option"].wrong,
+.btn-option.wrong    { background: var(--err); color: #fff; }
+
+.btn[data-variant="replay"],
+.btn-replay {
+  font-size: 1.5rem;
+  padding: 15px;
+}
+
+.btn[data-variant="cta"],
 #start-btn.btn {
   max-width: 480px;
   padding: 25px;
@@ -14,6 +74,7 @@
   color: #fff;
   text-transform: uppercase;
 }
+
 
 /* play-row — horizontal group of buttons */
 .play-row { 

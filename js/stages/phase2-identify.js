@@ -14,6 +14,7 @@ import {
   stampQuestion, stampSelection, selectionElapsed, reactionDelay,
   getEpoch, getTop5Threshold
 } from '../main.js';
+import { makeCard, makeFeedback, makeOptionGrid } from '../components.js';
 
 const ct = document.getElementById('ct');
 
@@ -25,16 +26,19 @@ export function rIdentify() {
   const rangeMinSp = Math.min(...validSps), rangeMaxSp = Math.max(...validSps);
   const distractorCount = Math.min(2, game.ga().length - 1);
   const note = G.cur, dist = game.getDistractors([note], distractorCount), ch = shuf([note, ...dist]);
-  const card = document.createElement('div'); card.className = 'panel pop-in'; card.id = 'acard';
-  card.innerHTML = `<div class="ptag">Fase 2 — Qual é esta nota?</div>
-    <div class="staffw" id="sd">${buildStaff({ showNote: note, rangeMinSp, rangeMaxSp })}</div>
-    <div class="opts">${ch.map(nid => `<button class="btn-option" id="ob-${nid}">${nd(nid).lB}</button>`).join('')}</div>
-    <div id="fb"></div>`;
+
+  const card = makeCard({ phase: 2, label: 'Qual é esta nota?' });
+  const staffDiv = document.createElement('div');
+  staffDiv.className = 'staffw'; staffDiv.id = 'sd';
+  staffDiv.innerHTML = buildStaff({ showNote: note, rangeMinSp, rangeMaxSp });
+  card.appendChild(staffDiv);
+  card.appendChild(makeOptionGrid(
+    ch.map(nid => ({ id: nid, label: nd(nid).lB })),
+    item => { stampSelection(); hId(item.id); }
+  ));
+  card.appendChild(makeFeedback());
   ct.appendChild(card);
   setTimeout(() => playNote(nd(note).f), 300);
-  ch.forEach(nid => {
-    document.getElementById('ob-' + nid).addEventListener('click', () => { stampSelection(); hId(nid); });
-  });
 }
 
 // Shared identification handler (also used by phase 5)

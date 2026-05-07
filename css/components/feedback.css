@@ -57,6 +57,83 @@
   line-height: 1;
 }
 
+/* ── FEEDBACK WIDGET (post-game star rating) ── */
+.fb-widget {
+  border-top: 1px solid rgba(255,255,255,0.15);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.fb-prompt {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: #fff;
+  text-align: center;
+}
+
+.fb-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.fb-star {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: rgba(255,255,255,0.25);
+  cursor: pointer;
+  padding: 0 0.1rem;
+  line-height: 1;
+  transition: color 0.1s, transform 0.1s;
+}
+
+.fb-star:hover,
+.fb-star.active {
+  color: var(--plus2);
+}
+
+.fb-star:hover {
+  transform: scale(1.15);
+}
+
+.fb-text {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fb-text::placeholder {
+  color: rgba(255,255,255,0.35);
+}
+
+.fb-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fb-actions .btn {
+  flex: 1;
+}
+
+.fb-thanks {
+  text-align: center;
+  color: var(--ok);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 0.5rem 0;
+}
+
 /* ── MOBILE SILENT-MODE MODAL ── */
 .silent-modal-overlay {
   position: fixed;

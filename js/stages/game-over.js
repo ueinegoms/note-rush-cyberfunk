@@ -2,6 +2,7 @@ import { G } from '../state.js';
 import * as lb from '../leaderboard.js';
 import { hapticBuzz, hapticError } from '../haptics.js';
 import { stopComboTimer, startGame, getEpoch } from '../main.js';
+import { showFeedbackWidget } from '../feedback.js';
 
 // ── GAME OVER ──
 let _celebrationTimer = 0;
@@ -204,6 +205,7 @@ export function renderGameOver() {
       const ag = document.createElement('button'); ag.className = 'btn btn-replay'; ag.textContent = '↺ JOGAR DE NOVO';
       ag.addEventListener('click', () => { stopCelebration(); startGame(false); });
       br.appendChild(ag); card.appendChild(br);
+      showFeedbackWidget({ score: final });
     } else {
       hapticError();
       startGame(true); // keep unlocked count, skip phase 1 for known notes

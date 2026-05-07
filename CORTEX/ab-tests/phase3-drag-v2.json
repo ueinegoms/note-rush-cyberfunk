@@ -1,0 +1,9 @@
+{
+  "id": "phase3-drag-v2",
+  "featureDesc": "Phase 3 posição — drag UX rebuild",
+  "variantA": "Original: touch-drag SVG up/down to position note",
+  "variantB": "V2: dedicated ▲/▼ buttons with hold-to-repeat + side strip label",
+  "startDate": "2025-07-01",
+  "status": "active",
+  "notes": "Variant B removes velocity-drag mechanic; improves discoverability on small screens. Variant A serves as control. Check avg star rating + drop-off from phase3 in game logs."
+}

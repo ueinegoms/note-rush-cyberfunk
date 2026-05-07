@@ -2,6 +2,7 @@
 
 ## In Progress
 - [x] Phase 0: CORTEX brain setup
+- [x] Phase 1: main.js decomposition — COMMITTED (162307f)
 
 ## Phases
 

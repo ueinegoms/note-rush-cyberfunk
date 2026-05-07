@@ -1,6 +1,7 @@
-import {SCALE_TYPES, buildScale, nd, AN} from './constants.js';
+import {nd, AN} from './constants.js';
 import {shuf} from './utils.js';
 import {G, lockAnswer, unlockAnswer} from './state.js';
+import { getNoteScale, getSettings } from './settings.js';
 
 // phases utilities — ordered by difficulty
 const PHASE_ORDER = [1,2,3,4,5,6];
@@ -22,13 +23,7 @@ export function nextActivePhase(current) {
 export function firstActivePhase() { return getActivePhases()[0]; }
 
 // note sets depending on selected scale type + octaves
-export function gn() {
-  const snr = document.getElementById('snr');
-  const soct = document.getElementById('soct');
-  const typeIdx = snr ? Math.max(0, Math.min(SCALE_TYPES.length - 1, (+snr.value) - 1)) : 0;
-  const octaves = soct ? Math.max(1, Math.min(5, +soct.value)) : 1;
-  return buildScale(typeIdx, octaves);
-}
+export function gn() { return getNoteScale(); }
 export function ga() { return gn().slice(0, Math.min(G.unlocked, gn().length)); }
 
 export function getDistractors(exclude, count) {
@@ -43,10 +38,8 @@ export function buildSOpts() {
 }
 
 export function S() {
-  return {
-    sfp: +document.getElementById('sfp').value,
-    sni: +document.getElementById('sni').value
-  };
+  const s = getSettings();
+  return { sfp: s.sfp, sni: s.sni };
 }
 
 // game state transitions and helpers

@@ -2,6 +2,7 @@ import { G, lockAnswer } from './state.js';
 import { onErr } from './game.js';
 import { jErrChord } from './audio.js';
 import { hapticError } from './haptics.js';
+import { getTimerDuration } from './settings.js';
 
 // ══════════════════════════════════════════════
 //  COMBO TIMER
@@ -16,17 +17,9 @@ export function setComboTimeoutHandler(fn) { _onTimeoutFn = fn; }
 let _comboTimerRaf = 0;
 let _comboTimerStart = 0;
 
-// Timer duration from sdif slider — DOM read, will be moved to settings.js in Phase 2
-function getTimerDuration() {
-  const el = document.getElementById('sdif');
-  const v = el ? +el.value : 1;
-  const base = 7000 - v * 1000; // 1→6s, 2→5s, 3→4s, 4→3s, 5→2s
-  return G.phase === 6 ? base + 10000 : base;
-}
-
 export function startComboTimer() {
   stopComboTimer();
-  const dur = getTimerDuration();
+  const dur = getTimerDuration(G.phase);
   if (dur <= 0) { _hideTimerBar(); return; }
   _comboTimerStart = Date.now();
   _showTimerBar();

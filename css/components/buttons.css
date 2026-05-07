@@ -110,3 +110,16 @@
   font-size: 1.5rem;
   padding: 15px;
 }
+
+/* ── Solfège button flash feedback ─────────────────────────────────────── */
+.opt--ok {
+  background: var(--ok, #00FF88) !important;
+  color: #000 !important;
+  transition: background 0.1s;
+}
+
+.opt--err {
+  background: var(--err, #FF2244) !important;
+  color: #fff !important;
+  transition: background 0.1s;
+}

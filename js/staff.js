@@ -205,3 +205,131 @@ export function buildStaffRhythm(sp, durationType = 'quarter') {
   s += `</svg>`;
   return s;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildSolfeggeStaff — 4-measure sight-reading staff for Phase 7
+//
+// events: NoteEvent[] — each { noteId, durationId, beats, measureIdx, beatStart }
+//   beatStart is absolute (0-based across all measures)
+// currentIdx: index of currently-armed note (-1 = count-in, null = round over)
+// totalMeasures: number of measures to render (default 4)
+// ─────────────────────────────────────────────────────────────────────────────
+export function buildSolfeggeStaff(events, currentIdx = -1, totalMeasures = 4) {
+  const CLEF_W   = 110;
+  const MEAS_W   = 450;
+  const VB_W     = CLEF_W + totalMeasures * MEAS_W;  // 1910
+  const BEAT_SLOT = MEAS_W / 4;                       // 112.5 per beat
+  const PAD_TOP  = 60;                                // extra vertical space above staff
+  const VB_H     = SH + PAD_TOP;
+
+  // Shift all Y values down by PAD_TOP to give room for ledger lines above staff
+  function NY2(sp) { return BY + PAD_TOP - sp * (LS / 2); }
+
+  function noteX(ev) {
+    const beatInMeas = ev.beatStart - ev.measureIdx * 4;
+    return CLEF_W + ev.measureIdx * MEAS_W + (beatInMeas + 0.5) * BEAT_SLOT;
+  }
+
+  let s = `<svg class="ssvg ssvg--solfege" viewBox="0 0 ${VB_W} ${VB_H}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // ── Staff lines (5 lines spanning full width) ────────────────────────────
+  for (let i = 0; i < 5; i++) {
+    const ly = NY2(i * 2);
+    s += `<line x1="0" y1="${ly}" x2="${VB_W}" y2="${ly}" stroke="#FFFFFF" stroke-width="2.5"/>`;
+  }
+
+  // ── Treble clef ──────────────────────────────────────────────────────────
+  const cfs = LS * 5.4;
+  const cly = BY + PAD_TOP - LS * 0.08;
+  s += `<text x="8" y="${cly}" font-size="${cfs}" fill="#FFFF5E" font-family="Georgia,serif" opacity=".7">&#x1D11E;</text>`;
+
+  // ── Time signature 4/4 ───────────────────────────────────────────────────
+  const tsX = 76, tsFontSize = LS * 1.55;
+  s += `<text x="${tsX}" y="${NY2(6)}" font-size="${tsFontSize}" fill="#fff" font-family="Georgia,serif" text-anchor="middle" font-weight="bold">4</text>`;
+  s += `<text x="${tsX}" y="${NY2(2)}" font-size="${tsFontSize}" fill="#fff" font-family="Georgia,serif" text-anchor="middle" font-weight="bold">4</text>`;
+
+  // ── Bar lines ────────────────────────────────────────────────────────────
+  const barTop    = NY2(8) - 4;
+  const barBottom = NY2(0) + 4;
+  for (let m = 1; m <= totalMeasures; m++) {
+    const bx = CLEF_W + m * MEAS_W;
+    if (m === totalMeasures) {
+      // Double bar at end
+      s += `<line x1="${bx - 6}" y1="${barTop}" x2="${bx - 6}" y2="${barBottom}" stroke="#FFFF5E" stroke-width="1.8"/>`;
+      s += `<line x1="${bx}"     y1="${barTop}" x2="${bx}"     y2="${barBottom}" stroke="#FFFF5E" stroke-width="4"/>`;
+    } else {
+      s += `<line x1="${bx}" y1="${barTop}" x2="${bx}" y2="${barBottom}" stroke="#FFFFFF" stroke-width="1.8"/>`;
+    }
+  }
+
+  // ── Note drawing ─────────────────────────────────────────────────────────
+  function ledgersAt(sp, cx, col) {
+    let ll = '';
+    const lx1 = cx - 26, lx2 = cx + 26;
+    if (sp < 0) {
+      const limit = sp % 2 === 0 ? sp : sp - 1;
+      for (let p = -2; p >= limit; p -= 2)
+        ll += `<line x1="${lx1}" y1="${NY2(p)}" x2="${lx2}" y2="${NY2(p)}" stroke="${col}" stroke-width="2"/>`;
+    }
+    if (sp > 8) {
+      const limit = sp % 2 === 0 ? sp : sp + 1;
+      for (let p = 10; p <= limit; p += 2)
+        ll += `<line x1="${lx1}" y1="${NY2(p)}" x2="${lx2}" y2="${NY2(p)}" stroke="${col}" stroke-width="2"/>`;
+    }
+    return ll;
+  }
+
+  // ── Playhead (render behind notes) ───────────────────────────────────────
+  if (currentIdx >= 0 && currentIdx < events.length) {
+    const px = noteX(events[currentIdx]);
+    s += `<line x1="${px}" y1="${barTop - 8}" x2="${px}" y2="${barBottom + 8}" stroke="#00FF88" stroke-width="2" stroke-dasharray="5 4" opacity="0.72"/>`;
+  }
+
+  // ── Notes ────────────────────────────────────────────────────────────────
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
+    const n  = nd(ev.noteId);
+    const sp = n.s + 5;                 // staff position (5 = middle C octave baseline)
+    const cx = noteX(ev);
+    const cy = NY2(sp);
+
+    let col;
+    if (i < currentIdx)       col = 'rgba(255,255,255,0.28)';
+    else if (i > currentIdx)  col = 'rgba(255,255,255,0.80)';
+    else /* i === currentIdx */ col = '#FFFF5E';
+
+    s += ledgersAt(sp, cx, col);
+
+    // Accidental symbol
+    if (n.acc) s += `<text x="${cx - 30}" y="${cy + 9}" font-size="27" fill="${col}" font-family="serif">${n.acc}</text>`;
+
+    // Note head
+    const rx = 15, ry = 11;
+    const rotate = `transform="rotate(-12,${cx},${cy})"`;
+    if (ev.durationId === 'quarter') {
+      s += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${col}" ${rotate}/>`;
+    } else {
+      // half or whole — hollow
+      s += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="${col}" stroke-width="2.2" ${rotate}/>`;
+    }
+
+    // Stem (quarter and half)
+    if (ev.durationId !== 'whole') {
+      const sdir = sp < 4 ? -1 : 1;   // -1 = stem up, 1 = stem down
+      const sx   = sdir === 1 ? cx - rx + 1 : cx + rx - 1;
+      s += `<line x1="${sx}" y1="${cy}" x2="${sx}" y2="${cy + sdir * 58}" stroke="${col}" stroke-width="2.4"/>`;
+    }
+
+    // Pulse ring on current note
+    if (i === currentIdx && currentIdx >= 0 && currentIdx < events.length) {
+      s += `<ellipse cx="${cx}" cy="${cy}" rx="21" ry="17" fill="none" stroke="#FFFF5E" stroke-width="1.4" opacity="0.5">
+        <animate attributeName="opacity" values="0.5;0.1;0.5" dur="0.65s" repeatCount="indefinite"/>
+        <animate attributeName="rx" values="21;27;21" dur="0.65s" repeatCount="indefinite"/>
+        <animate attributeName="ry" values="17;23;17" dur="0.65s" repeatCount="indefinite"/>
+      </ellipse>`;
+    }
+  }
+
+  s += `</svg>`;
+  return s;
+}

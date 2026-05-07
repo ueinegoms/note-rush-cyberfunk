@@ -1,155 +1,207 @@
-import { nd, DURATIONS } from '../constants.js';
-import { G, lockAnswer } from '../state.js';
+import { nd } from '../constants.js';
+import { G } from '../state.js';
 import * as game from '../game.js';
 import { onOk, onErr } from '../game.js';
-import { playNote, jOkChord, jErrChord } from '../audio.js';
-import { buildStaffRhythm } from '../staff.js';
+import { playNote } from '../audio.js';
+import { buildSolfeggeStaff } from '../staff.js';
 import { getBpm } from '../settings.js';
 import { hapticSuccess, hapticError, hapticNudge } from '../haptics.js';
 import {
   render, advancePhaseWithRender,
-  lightning, lightningIntensity,
-  updateComboDisplay, stopComboTimer,
-  stampQuestion, stampSelection, selectionElapsed, reactionDelay,
-  getEpoch,
+  stampQuestion, stampSelection,
 } from '../main.js';
 import { makeCard, makeFeedback } from '../components.js';
 
 const ct = document.getElementById('ct');
 
-// Play a short metronome click at freq Hz (sine burst)
-function clickTone(freq, gainVal = 0.35) {
+// ── Duration table for sight-reading (no eighth notes) ──────────────────────
+const SOLFEGE_DURS = [
+  { id: 'whole',   beats: 4, w: 10 },
+  { id: 'half',    beats: 2, w: 30 },
+  { id: 'quarter', beats: 1, w: 60 },
+];
+
+function pickDur(remaining) {
+  const eligible = SOLFEGE_DURS.filter(d => d.beats <= remaining);
+  const total = eligible.reduce((a, d) => a + d.w, 0);
+  let r = Math.random() * total;
+  for (const d of eligible) { r -= d.w; if (r <= 0) return d; }
+  return eligible[eligible.length - 1];
+}
+
+// ── Fill one measure (4 beats) ───────────────────────────────────────────────
+function fillMeasure(activeNotes, measureIdx) {
+  const events = [];
+  let remaining = 4;
+  let cursor = 0;
+  while (remaining > 0) {
+    const dur = pickDur(remaining);
+    const noteId = activeNotes[Math.floor(Math.random() * activeNotes.length)];
+    events.push({ noteId, durationId: dur.id, beats: dur.beats,
+                  measureIdx, beatStart: measureIdx * 4 + cursor });
+    cursor += dur.beats;
+    remaining -= dur.beats;
+  }
+  return events;
+}
+
+// ── Build full round (4 measures) ───────────────────────────────────────────
+function buildRound(activeNotes) {
+  const events = [];
+  for (let m = 0; m < 4; m++) events.push(...fillMeasure(activeNotes, m));
+  return events;
+}
+
+// ── Short metronome click ────────────────────────────────────────────────────
+function clickTone(freq) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
+    const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.value = freq;
-    gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.05);
-  } catch (_) { /* silent fail in restricted environments */ }
+  } catch (_) { /* silent fail */ }
 }
 
-// Score timing accuracy: returns { label, multiplier }
-function rhythmScore(offsetMs) {
-  const abs = Math.abs(offsetMs);
-  if (abs <= 100) return { label: 'PERFEITO',   multiplier: 1.0 };
-  if (abs <= 250) return { label: 'BOM',         multiplier: 0.5 };
-  return              { label: 'FORA DO TEMPO', multiplier: 0.0 };
-}
-
-// ── PHASE 7 — RHYTHM ──
+// ── PHASE 7 — SOLFÈGE SIGHT-READING ──────────────────────────────────────────
 export function rRhythm() {
-  if (!G.cur || G.ans) game.pickNew();
+  const activeNotes = game.ga();
+  const events      = buildRound(activeNotes);
+  const bpm         = getBpm();
+  const beatMs      = 60000 / bpm;
+  const countInMs   = 2 * beatMs;   // two metronome clicks before beat 1
+
+  // Buttons sorted lowest → highest pitch
+  const sortedNotes = [...activeNotes].sort((a, b) => nd(a).f - nd(b).f);
+
+  // ── Build card ─────────────────────────────────────────────────────────
   stampQuestion();
 
-  const noteId   = G.cur;
-  const note     = nd(noteId);
-  const dur      = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
-  const bpm      = getBpm();
-  const beatMs   = 60000 / bpm;
-  const targetMs = dur.beats * beatMs; // when player should tap relative to beat-1
+  const card = makeCard({ phase: 7, label: 'Solfège — identifique as notas' });
 
-  const card  = makeCard({ phase: 7, label: 'Ritmo — toque no momento certo' });
-  const nname = document.createElement('div'); nname.className = 'nname'; nname.textContent = note.lB;
-  const durLabel = document.createElement('div'); durLabel.className = 'drag-hint'; durLabel.textContent = dur.label + ` (${dur.beats} tempo${dur.beats !== 1 ? 's' : ''})`;
+  const staffWrap = document.createElement('div');
+  staffWrap.className = 'solfege-staff-wrap';
+  staffWrap.innerHTML = buildSolfeggeStaff(events, -1);
 
-  const staffWrap = document.createElement('div'); staffWrap.className = 'staffw';
-  staffWrap.innerHTML = buildStaffRhythm(note.s + 5, dur.id);
-
-  const timeline = document.createElement('div'); timeline.className = 'rhythm-timeline';
-  const bar      = document.createElement('div'); bar.className = 'rhythm-bar'; bar.id = 'rhythm-bar';
-  timeline.appendChild(bar);
-
-  const tapBtn = document.createElement('button');
-  tapBtn.className = 'btn'; tapBtn.id = 'rhythm-tap'; tapBtn.textContent = 'TAP ↵';
-  tapBtn.style.fontSize = '1.4rem'; tapBtn.style.minHeight = '64px';
-  tapBtn.disabled = true;
+  const opts = document.createElement('div');
+  opts.className = 'opts';
+  sortedNotes.forEach(noteId => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.dataset.note = noteId;
+    btn.textContent = nd(noteId).lb;
+    btn.addEventListener('click', () => tapHandler(noteId));
+    opts.appendChild(btn);
+  });
 
   const fb = makeFeedback();
-
-  card.append(nname, durLabel, staffWrap, timeline, tapBtn, fb);
+  card.append(staffWrap, opts, fb);
   ct.appendChild(card);
 
-  // ── Lead-in: 2 metronome clicks at BPM, then arm the tap button ──
-  let _armed = false;
-  let _beatStart = null; // timestamp when beat 1 fires
+  // ── Round state ────────────────────────────────────────────────────────
+  let _displayIdx = -1;           // controls staff rendering
+  let _armed      = null;         // event index currently awaiting tap
+  let _roundDone  = false;
+  const results   = new Array(events.length).fill(null);
 
-  setTimeout(() => {
-    clickTone(880);
-    hapticNudge();
-  }, 0);
-  setTimeout(() => {
-    clickTone(880);
-    hapticNudge();
-    _beatStart = performance.now();
-    _armed = true;
-    tapBtn.disabled = false;
-
-    // Animate sweep bar to show targetMs time window
-    bar.style.transition = `width ${targetMs}ms linear`;
-    bar.style.width = '100%';
-  }, beatMs);
-
-  // ── Auto-miss after targetMs * 2 ──
-  const myEpoch = getEpoch();
-  setTimeout(() => {
-    if (!_armed || G.ans || getEpoch() !== myEpoch) return;
-    handleTap(Infinity); // too late
-  }, beatMs + targetMs * 2);
-
-  function handleTap(forcedOffset) {
-    if (G.ans || !lockAnswer()) return;
-    _armed = false;
-    tapBtn.disabled = true;
-
-    const offsetMs = forcedOffset !== undefined
-      ? forcedOffset
-      : performance.now() - (_beatStart + targetMs);
-    const { label, multiplier } = rhythmScore(offsetMs);
-
-    stampSelection();
-    const fbEl = document.getElementById('fb');
-    bar.style.transition = 'none';
-
-    if (multiplier > 0) {
-      fbEl.textContent  = label;
-      fbEl.className    = 'ok';
-      playNote(note.f, 0.8);
-      jOkChord(note.f);
-      hapticSuccess();
-      lightning(lightningIntensity(selectionElapsed()));
-      // Scale elapsed time to reflect accuracy (perfect = fast, good = medium)
-      onOk(100 + (1 - multiplier) * 4000);
-      updateComboDisplay();
-      const { sfp } = game.S(); const rd = reactionDelay();
-      if (G.streak >= sfp) { setTimeout(() => advancePhaseWithRender(G.phase), rd); return; }
-      setTimeout(() => { game.nextQ(); render(); }, rd);
-    } else {
-      fbEl.textContent = label;
-      fbEl.className   = 'err';
-      playNote(note.f, 0.8);
-      jErrChord(note.f);
-      hapticError();
-      onErr();
-      updateComboDisplay();
-      const c = document.getElementById('acard');
-      if (c) { c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 360); }
-      // After miss, restart immediately
-      const eg = getEpoch(); setTimeout(() => { if (getEpoch() === eg) { game.nextQ(); render(); } }, 1000);
-    }
+  function updateStaff(idx) {
+    _displayIdx = idx;
+    staffWrap.innerHTML = buildSolfeggeStaff(events, idx);
   }
 
-  tapBtn.addEventListener('click', () => { if (_armed) handleTap(); });
-  document.addEventListener('keydown', function onKey(e) {
-    if ((e.code === 'Space' || e.code === 'Enter') && _armed) {
-      e.preventDefault();
-      handleTap();
-      document.removeEventListener('keydown', onKey);
+  function getFb() { return document.getElementById('fb'); }
+
+  // ── Count-in ───────────────────────────────────────────────────────────
+  setTimeout(() => { clickTone(880); hapticNudge(); }, 0);
+  setTimeout(() => { clickTone(880); hapticNudge(); }, beatMs);
+
+  // ── Schedule arm + auto-miss for every event ───────────────────────────
+  events.forEach((ev, i) => {
+    const armAt    = countInMs + ev.beatStart * beatMs;
+    const missAt   = armAt + ev.beats * beatMs + 80; // small grace offset
+    setTimeout(() => armNote(i),   armAt);
+    setTimeout(() => autoMiss(i),  missAt);
+  });
+
+  // Schedule round-end summary
+  const last = events[events.length - 1];
+  setTimeout(afterRound, countInMs + (last.beatStart + last.beats) * beatMs + 300);
+
+  // ── armNote ────────────────────────────────────────────────────────────
+  function armNote(i) {
+    if (_roundDone || results[i] !== null) return;
+    _armed = i;
+    updateStaff(i);
+    playNote(nd(events[i].noteId).f, 0.55);
+    stampSelection();
+  }
+
+  // ── autoMiss ───────────────────────────────────────────────────────────
+  function autoMiss(i) {
+    if (_roundDone || results[i] !== null || _armed !== i) return;
+    results[i] = false;
+    _armed = null;
+    onErr();
+    hapticError();
+    const fbEl = getFb();
+    if (fbEl) { fbEl.textContent = 'TARDE'; fbEl.className = 'err'; }
+    updateStaff(i + 1); // dim resolved events, keep future bright
+  }
+
+  // ── tapHandler ─────────────────────────────────────────────────────────
+  function tapHandler(noteId) {
+    if (_roundDone || _armed === null) return;
+    const idx   = _armed;
+    _armed = null;
+    const correct = noteId === events[idx].noteId;
+    results[idx]  = correct;
+
+    const fbEl       = getFb();
+    const correctBtn = opts.querySelector(`[data-note="${events[idx].noteId}"]`);
+
+    if (correct) {
+      if (fbEl) { fbEl.textContent = 'CERTO!'; fbEl.className = 'ok'; }
+      if (correctBtn) { correctBtn.classList.add('opt--ok'); setTimeout(() => correctBtn.classList.remove('opt--ok'), 600); }
+      playNote(nd(events[idx].noteId).f, 0.7);
+      hapticSuccess();
+      onOk(0);
+    } else {
+      if (fbEl) { fbEl.textContent = `ERROU — era ${nd(events[idx].noteId).lb}`; fbEl.className = 'err'; }
+      if (correctBtn) { correctBtn.classList.add('opt--ok'); setTimeout(() => correctBtn.classList.remove('opt--ok'), 900); }
+      const wrongBtn = opts.querySelector(`[data-note="${noteId}"]`);
+      if (wrongBtn) { wrongBtn.classList.add('opt--err'); setTimeout(() => wrongBtn.classList.remove('opt--err'), 600); }
+      hapticError();
+      onErr();
     }
-  }, { once: false });
+
+    updateStaff(idx + 1); // dim resolved, keep future bright
+  }
+
+  // ── afterRound ─────────────────────────────────────────────────────────
+  function afterRound() {
+    if (_roundDone) return;
+    _roundDone = true;
+    _armed = null;
+
+    const correct = results.filter(Boolean).length;
+    const total   = events.length;
+    updateStaff(events.length); // all dimmed
+
+    const fbEl = getFb();
+    if (fbEl) {
+      fbEl.textContent = `${correct}/${total} corretas`;
+      fbEl.className   = correct > 0 ? 'ok' : 'err';
+    }
+
+    setTimeout(() => {
+      if (correct > 0) advancePhaseWithRender(G.phase);
+      else             render();
+    }, 1800);
+  }
 }

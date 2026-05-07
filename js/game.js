@@ -34,7 +34,8 @@ export function getDistractors(exclude, count) {
 export function buildSOpts() {
   const count = Math.min(2, ga().length - 1);
   const dist = getDistractors([G.cur], count);
-  G.sopts = shuf([G.cur, ...dist]);
+  // Sort ascending by frequency so buttons always appear deepest → highest pitch
+  G.sopts = [G.cur, ...dist].sort((a, b) => nd(a).f - nd(b).f);
 }
 
 export function S() {

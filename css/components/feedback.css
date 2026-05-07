@@ -195,3 +195,16 @@
   letter-spacing: 0.08em;
 }
 
+
+/* ── Solfège phase 7 staff ─────────────────────────────────────────────── */
+.solfege-staff-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.5rem 0;
+}
+
+.solfege-staff-wrap .ssvg--solfege {
+  min-width: 480px;
+  display: block;
+}

@@ -29,7 +29,6 @@ export function rPlace() {
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   const card = makeCard({ phase: 3, label: 'Posicione a nota' });
-  const nname = document.createElement('div'); nname.className = 'nname'; nname.textContent = n.lB;
 
   // drag layout: staff SVG + side strip (▲ label ▼)
   const dragLayout = document.createElement('div'); dragLayout.className = 'drag-layout';
@@ -48,7 +47,7 @@ export function rPlace() {
   confirmBtn.className = 'btn'; confirmBtn.id = 'drag-confirm'; confirmBtn.textContent = '✓ Confirmar posição';
   if (!isTouchDevice) confirmBtn.style.display = 'none';
 
-  card.append(nname, dragLayout, dragHint, fb, confirmBtn);
+  card.append(dragLayout, dragHint, fb, confirmBtn);
   ct.appendChild(card);
   setTimeout(() => playNote(n.f), 300);
   initDragStaff(note);

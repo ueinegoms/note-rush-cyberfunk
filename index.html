@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="css/components/piano.css">
 <link rel="stylesheet" href="css/components/name-entry.css">
 <link rel="stylesheet" href="css/components/animations.css">
+<link rel="stylesheet" href="css/components/footer.css">
 
 <!-- Theme overrides -->
 <link rel="stylesheet" href="css/theme-cyberfunk.css">
@@ -46,7 +47,6 @@
   <div class="intro-actions">
     <button id="start-btn" class="btn">JOGAR</button>
     <button id="skip-ob-btn">Pular onboarding</button>
-    <a id="portfolio-link" href="https://wayne.blue" target="_blank" rel="noopener">Meu portfólio ↗</a>
   </div>
 
 </div>
@@ -171,7 +171,16 @@
 
 </div>
 
+<!-- FOOTER — the way to the portfolio, under everything -->
+<footer id="site-footer">
+  <a id="portfolio-btn" class="btn" data-variant="cta" href="https://wayne.blue" target="_blank" rel="noopener">
+    <canvas id="pf-canvas" aria-hidden="true"></canvas>
+    <span>PORTFÓLIO ↗</span>
+  </a>
+</footer>
+
 <script type="module" src="js/main.js"></script>
 <script type="module" src="js/admin.js"></script>
+<script type="module" src="js/portfolio-shader.js"></script>
 </body>
 </html>

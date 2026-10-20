@@ -1,0 +1,42 @@
+/* ══════════════════════════════════════
+   FOOTER — the portfolio button, under everything
+   Shaped as JOGAR (the cta variant); its background is the portfolio's own
+   shader (js/portfolio-shader.js). Without WebGL: a still gradient in the
+   same colours.
+══════════════════════════════════════ */
+
+#site-footer {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 13px 13px 32px;
+}
+
+#portfolio-btn.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  text-decoration: none;
+  background: linear-gradient(120deg, #080808 0%, #45f287 55%, #080808 100%);
+  color: #fff;
+}
+
+#portfolio-btn.has-shader { background: #0a0a0a; }
+
+#pf-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  display: block;
+}
+
+#portfolio-btn span {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+#portfolio-btn:focus-visible {
+  outline: 3px solid var(--plus2);
+  outline-offset: 3px;
+}

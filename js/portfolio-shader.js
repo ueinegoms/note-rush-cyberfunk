@@ -1,14 +1,16 @@
 // ══════════════════════════════════════════════
 //  PORTFOLIO BUTTON — the background of the portfolio (wayne.blue)
 //  The same WebGL shader as its home: a 100×100 mesh waving in the vertex
-//  shader, dark mixed into the home's green with a grain in the fragment
-//  shader. Only the first pass (the portfolio's "fried" post-process lives
+//  shader, a dark mixed into a colour with a grain in the fragment shader;
+//  in NOTE RUSH's colours here (the dark of a setting switched off, --plus1,
+//  into the light blue, --bg2) instead of the portfolio's dark and green. Only the first pass (the portfolio's "fried" post-process lives
 //  in its projects zone, not on its home).
 //  Animates only while the button is on screen; a still frame for
 //  prefers-reduced-motion; no WebGL → the CSS fallback in footer.css.
 // ══════════════════════════════════════════════
 
-const COLOR = [0x45 / 255, 0xf2 / 255, 0x87 / 255]; // the portfolio's home ('ctas')
+const DARK = [0x22 / 255, 0x12 / 255, 0x6a / 255];  // --plus1 (#22126A): ouvir / escala / ritmo switched off
+const COLOR = [0x1c / 255, 0x3d / 255, 0xf7 / 255]; // --bg2 (#1C3DF7): the light blue
 const WAVES = [0.25, 4.0, 0.05, 13.0, 0.02, 8.0];    // u_w1a, u_w1f, u_w2a, u_w2f, u_w3a, u_w3f
 const SPEED = 0.4;                                   // as the portfolio's sTime
 
@@ -32,10 +34,10 @@ const VERT = `
 `;
 const FRAG = `
   precision highp float; varying vec2 v_uv; uniform float u_t;
-  uniform vec3 u_col;
+  uniform vec3 u_col, u_dark;
   float rnd(vec2 s){return fract(sin(dot(s,vec2(12.9898,78.233)))*43758.5453);}
   void main() {
-    vec3 dark=vec3(0.031);
+    vec3 dark=u_dark;
     float w=0.5*sin(u_t*0.7+v_uv.x*6.0)+0.3*cos(u_t*0.9+v_uv.y*8.0)+0.2*sin(u_t*0.5+(v_uv.x+v_uv.y)*10.0);
     float val=sin(w*0.5+v_uv.x*2.0-v_uv.y*2.0);
     vec3 c1=mix(dark,u_col,smoothstep(-0.5,10.0,val));
@@ -77,6 +79,7 @@ function start(canvas) {
   const uT = gl.getUniformLocation(prog, 'u_t'), uAR = gl.getUniformLocation(prog, 'u_ar');
   ['u_w1a', 'u_w1f', 'u_w2a', 'u_w2f', 'u_w3a', 'u_w3f'].forEach((n, i) => gl.uniform1f(gl.getUniformLocation(prog, n), WAVES[i]));
   gl.uniform3f(gl.getUniformLocation(prog, 'u_col'), COLOR[0], COLOR[1], COLOR[2]);
+  gl.uniform3f(gl.getUniformLocation(prog, 'u_dark'), DARK[0], DARK[1], DARK[2]);
 
   const resize = () => {
     const r = window.devicePixelRatio || 1;
@@ -86,7 +89,7 @@ function start(canvas) {
   };
   let t = 0, last = 0, raf = 0, visible = false;
   const draw = () => {
-    gl.clearColor(0.04, 0.04, 0.04, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clearColor(DARK[0], DARK[1], DARK[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform1f(uT, t);
     gl.uniform1f(uAR, canvas.width / canvas.height);
     gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);

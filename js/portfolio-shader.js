@@ -1,16 +1,15 @@
 // ══════════════════════════════════════════════
 //  PORTFOLIO BUTTON — the background of the portfolio (wayne.blue)
 //  The same WebGL shader as its home: a 100×100 mesh waving in the vertex
-//  shader, a dark mixed into a colour with a grain in the fragment shader;
-//  in NOTE RUSH's colours here (the dark of a setting switched off, --plus1,
-//  into the light blue, --bg2) instead of the portfolio's dark and green. Only the first pass (the portfolio's "fried" post-process lives
+//  shader, the portfolio's dark mixed into its home's green with a grain in
+//  the fragment shader (as the portfolio: a contrast with NOTE RUSH's blue). Only the first pass (the portfolio's "fried" post-process lives
 //  in its projects zone, not on its home).
 //  Animates only while the button is on screen; a still frame for
 //  prefers-reduced-motion; no WebGL → the CSS fallback in footer.css.
 // ══════════════════════════════════════════════
 
-const DARK = [0x22 / 255, 0x12 / 255, 0x6a / 255];  // --plus1 (#22126A): ouvir / escala / ritmo switched off
-const COLOR = [0x1c / 255, 0x3d / 255, 0xf7 / 255]; // --bg2 (#1C3DF7): the light blue
+const DARK = [0.031, 0.031, 0.031];                 // the portfolio's dark
+const COLOR = [0x45 / 255, 0xf2 / 255, 0x87 / 255]; // the portfolio's home ('ctas')
 const WAVES = [0.25, 4.0, 0.05, 13.0, 0.02, 8.0];    // u_w1a, u_w1f, u_w2a, u_w2f, u_w3a, u_w3f
 const SPEED = 0.4;                                   // as the portfolio's sTime
 
@@ -89,7 +88,7 @@ function start(canvas) {
   };
   let t = 0, last = 0, raf = 0, visible = false;
   const draw = () => {
-    gl.clearColor(DARK[0], DARK[1], DARK[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clearColor(0.04, 0.04, 0.04, 1); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform1f(uT, t);
     gl.uniform1f(uAR, canvas.width / canvas.height);
     gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);

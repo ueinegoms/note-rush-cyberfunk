@@ -2,7 +2,7 @@
    FOOTER — the portfolio button, under everything
    Shaped as JOGAR (the cta variant), as far from the screen's edges as JOGAR
    is (19px; 480px wide at most) and as far from the settings above; its
-   background is the portfolio's own shader in NOTE RUSH's blues
+   background is the portfolio's own shader, its own green
    (js/portfolio-shader.js), its
    words in the portfolio's greeting type ("boa noite": the system's sans,
    900, tight). Without WebGL: a still gradient in the same colours.
@@ -21,11 +21,11 @@
   isolation: isolate;
   text-decoration: none;
   margin: 0;
-  background: linear-gradient(120deg, var(--plus1) 0%, var(--bg2) 55%, var(--plus1) 100%);
+  background: linear-gradient(120deg, #080808 0%, #45f287 55%, #080808 100%);
   color: #fff;
 }
 
-#portfolio-btn.has-shader { background: var(--plus1); }
+#portfolio-btn.has-shader { background: #0a0a0a; }
 
 #pf-canvas {
   position: absolute;
